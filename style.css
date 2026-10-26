@@ -63,6 +63,10 @@ table{width:100%;border-collapse:collapse;margin:6px 0 14px}th,td{border:1px sol
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--g4);color:#fff;padding:9px 16px;border-radius:8px;z-index:10}
 /* print */
 #pr{display:none}
+.tools .srch{width:270px;max-width:100%;font-size:14px}
+.btn[disabled]{opacity:.45;cursor:default}
+.sc tr.trw:hover{background:var(--g1)}
+#pr.ls .pg{min-height:199mm}
 .msr{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--g2);border-radius:8px;margin-bottom:6px;flex-wrap:wrap;cursor:pointer;background:var(--cd);border-inline-start:5px solid var(--g3)}
 .msr.on{outline:2px solid var(--red)}.msr.done{border-inline-start-color:var(--g4)}.msr.late{border-inline-start-color:var(--red);background:var(--rs)}.msr.risk{border-inline-start-color:var(--red)}
 .msr .ic{width:22px;height:22px;border-radius:50%;border:2px solid var(--g3);display:flex;align-items:center;justify-content:center;font-size:13px;flex:none}.msr.done .ic{background:var(--g4);border-color:var(--g4);color:#fff}

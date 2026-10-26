@@ -1,5 +1,5 @@
 var A={
- go:function(e){V=e.dataset.v;MID=null;render()},
+ go:function(e){MQ='';V=e.dataset.v;MID=null;render()},
  open:function(e){MID=e.dataset.id;V='machine';F={st:'all',dp:''};render()},
  cell:function(e){MID=e.dataset.id;V='machine';F={st:'all',dp:e.dataset.dp};render()},
  newm:function(e,pre){modal('ماكينة جديدة',fMachine({src:pre},'new'),function(v){if(!v.n.trim()){toast('اكتب اسم الماكينة');return false}
@@ -34,7 +34,7 @@ var A={
  ap:function(e){var t=g('tasks',e.dataset.id);tupd(t,{s:'done',dn:Date.now()},'اعتمدها مدير القسم');toast('اتعتمدت واتقفلت')},
  cl:function(){var t=g('tasks',TID),n=t.au===0?0:desc(t.id).filter(function(x){return ts(x)!=='done'}).length;if(n)ask('هيتقفل التاسك و'+n+' تاسك فرعية معاها. متأكد؟',function(){closeT(t,1)});else closeT(t,isP(t))},
  ro:function(){reopen(g('tasks',TID))},
- go:function(e){if(e.dataset.v){V=e.dataset.v;MID=null;TID=null;render();return}tupd(g('tasks',TID),{s:'go'},'بدأت')},
+ go:function(e){if(e.dataset.v){MQ='';V=e.dataset.v;MID=null;TID=null;render();return}tupd(g('tasks',TID),{s:'go'},'بدأت')},
  bk:function(){var t=g('tasks',TID);modal('تعطيل التاسك',[{k:'w',l:'السبب (مستني إيه / مين)',t:'textarea'}],function(v){tupd(t,{blk:1,why:v.w.trim()},'اتعطّلت: '+v.w.trim())})},
  ub:function(){var t=g('tasks',TID);tupd(t,{blk:0,why:'',s:t.s==='block'?'new':t.s},'اتلغى التعطيل')},
  dt:function(e){var id=(e&&e.dataset&&e.dataset.id)||TID,t=g('tasks',id),d=desc(t.id);ask('هيتحذف «'+esc(t.d)+'»'+(d.length?' و'+d.length+' تاسك فرعية':'')+'. لا يمكن التراجع.',function(){d.forEach(function(x){del('tasks',x.id)});del('tasks',t.id);lg('حذف تاسك: '+t.d);if(V==='task'&&TID===t.id){V='machine';MID=t.m;TID=null}render()})},
@@ -73,6 +73,12 @@ var A={
  me:function(e){ME=e.value;try{localStorage.setItem('tronix_me',ME)}catch(x){}render()},
  linkme:function(){var id=myEmp();if(id&&uid){upd('emps',id,{uid:uid});toast('اتربط حسابك')}},
  mf:function(e){MF=e.dataset.v;render()},
+ lay:function(e){LAY=e.dataset.v;try{localStorage.setItem('tronix_lay',LAY)}catch(x){}render()},
+ pcor:function(e){PC.or=e.value==='l'?'l':'p';svPC();render()},
+ ef:function(e){EF=e.value;render()},
+ pemp:function(){var d=empDoc();if(!d){toast('لا يوجد موظفين للطباعة');return}printDoc(d)},
+ mnav:function(e){var m=g('machines',MID);if(!m)return;var L=navList(m),i=L.map(function(x){return x.id}).indexOf(m.id),j=i+(+e.dataset.d);if(j<0||j>=L.length)return;MID=L[j].id;F={st:'all',dp:''};render();try{window.scrollTo(0,0)}catch(x){}},
+ jump:function(e){if(e.value){MID=e.value;F={st:'all',dp:''};render()}},
  ss:function(e){var m=g('machines',MID),k=e.dataset.k;if(k==='del'){modal('تسليم '+(m.fac?'المشروع':'الماكينة'),[{k:'act',l:'تاريخ التسليم الفعلي',t:'date',v:TODAY}],function(v){upd('machines',m.id,{st:'del',act:v.act||TODAY});lg('تسليم: '+m.n)},{ok:'تأكيد التسليم'})}else{upd('machines',m.id,{st:k,act:''});lg('حالة '+m.n+': '+MST[k])}},
  arch1:function(){var m=g('machines',MID);upd('machines',m.id,{ar:1});lg('أرشفة: '+m.n);V=m.fac?'fac':'machines';MID=null;render()},
  fm:function(e){F.ms=(!e.dataset.id||F.ms===e.dataset.id)?'':e.dataset.id;render()},
@@ -100,6 +106,11 @@ var A={
  editsp:function(e){var x=g('specs',e.dataset.id);modal('تعديل الخانة',[{k:'n',l:'الاسم',v:x.n}],function(v){if(!v.n.trim())return false;upd('specs',x.id,{n:v.n.trim()});lg('تعديل خانة مواصفات: '+v.n)},{del:function(){del('specs',x.id);lg('حذف خانة مواصفات: '+x.n)}})},
  mvup:function(e){mv(e.dataset.c,e.dataset.id,-1)},mvdn:function(e){mv(e.dataset.c,e.dataset.id,1)},
  logout:async function(){await SB.auth.signOut();location.reload()},
+ newacc:function(){if(ROLE!=='admin'){toast('مفيش صلاحية');return}modal('إضافة حساب',[{k:'n',l:'الاسم'},{k:'em',l:'الإيميل (ممكن إيميل شكلي زي name@tronix.local)'},{k:'pw',l:'كلمة المرور (6 حروف أو أرقام على الأقل)'},{k:'rl',l:'الصلاحية',t:'select',o:[['manager','إدارة / مشرف (manager)'],['admin','مدير كامل (admin)'],['worker','موظف تنفيذ (worker)']]},{k:'emp',l:'ربطه بموظف (اختياري)',t:'select',o:eopts()}],function(v){if(!v.n.trim()||!v.em.trim()||v.pw.length<6){toast('اكتب الاسم والإيميل وكلمة مرور 6 حروف على الأقل');return false}
+  (async function(){try{var tmp=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});var r=await tmp.auth.signUp({email:v.em.trim(),password:v.pw});if(r.error){toast('فشل إنشاء الحساب: '+r.error.message);return}var u=r.data&&r.data.user;if(!u){toast('تعذّر إنشاء الحساب');return}var q=await SB.from('nw_profiles').insert({uid:u.id,role:v.rl,name:v.n.trim()});if(q.error){toast('الحساب اتعمل لكن فشل تحديد صلاحيته: '+q.error.message);return}PROF[u.id]=v.n.trim();PROFR[u.id]={name:v.n.trim(),role:v.rl};if(v.emp)await upd('emps',v.emp,{uid:u.id});lg('إضافة حساب: '+v.n.trim()+' ('+v.rl+')');toast(r.data.session?'اتعمل الحساب وجاهز للدخول':'اتعمل الحساب. لو الموظف مش قادر يدخل، اقفل «Confirm email» من Supabase');render()}catch(e){toast('خطأ: '+(e.message||''))}})()},{ok:'إنشاء الحساب'})},
+ accrole:async function(e){var u=e.dataset.id;if(ROLE!=='admin'||u===uid){render();return}var q=await SB.from('nw_profiles').update({role:e.value}).eq('uid',u);if(q.error){toast('فشل تغيير الصلاحية: '+q.error.message);render();return}PROFR[u].role=e.value;lg('تغيير صلاحية: '+(PROFR[u].name||'')+' ← '+e.value);toast('اتغيّرت الصلاحية')},
+ accdel:function(e){var u=e.dataset.id;if(ROLE!=='admin'||u===uid)return;ask('إيقاف وصول «'+esc((PROFR[u]||{}).name||'')+'» للنظام؟ الحساب هيفضل موجود بس مش هيقدر يشوف حاجة.',async function(){var q=await SB.from('nw_profiles').delete().eq('uid',u);if(q.error){toast('فشل: '+q.error.message);return}delete PROFR[u];toast('اتوقّف الوصول');render()})},
+
  sbexp:function(){var o={};COL.forEach(function(c){o[c]={};S[c].forEach(function(x){var d=Object.assign({},x);delete d.id;o[c][x.id]=d})});var b=new Blob([JSON.stringify(o)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tronix-tracker-backup-'+TODAY+'.json';a.click()},
  sbimp:function(){var i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=function(){var r=new FileReader();r.onload=async function(){try{var o=JSON.parse(r.result),rows=[];COL.forEach(function(c){var m=o[c]||{};Object.keys(m).forEach(function(id){rows.push({col:c,id:id,data:m[id]})})});if(!rows.length){toast('الملف فاضي');return}for(var k=0;k<rows.length;k+=200){var q=await SB.from('nw_docs').upsert(rows.slice(k,k+200));if(q.error)throw q.error}await db.reload();toast('اتستورد '+rows.length+' عنصر')}catch(e){toast('فشل الاستيراد: '+(e.message||'ملف غير صالح'))}};r.readAsText(i.files[0])};i.click()},
  deltpl:function(e){var x=g('tpls',e.dataset.id);ask('حذف القالب «'+esc(x.n)+'»؟',function(){del('tpls',x.id)})}
@@ -111,6 +122,9 @@ document.addEventListener('dragstart',function(e){var r=e.target.closest&&e.targ
 document.addEventListener('dragover',function(e){if(!DR)return;var r=e.target.closest&&e.target.closest('tr[data-did]');if(r&&r.dataset.dc===DR.c)e.preventDefault()});
 document.addEventListener('drop',function(e){if(!DR)return;var r=e.target.closest&&e.target.closest('tr[data-did]');if(r&&r.dataset.dc===DR.c){e.preventDefault();moveTo(DR.c,DR.id,r.dataset.did)}DR=null});
 document.addEventListener('dragend',function(){DR=null});
+document.addEventListener('input',function(e){if(e.target&&e.target.id==='msq'){MQ=e.target.value;drawList()}});
+async function insertBelow(x){var pp=g('tasks',x.pa);if(!pp)return;var sb=kids(x.pa),i=sb.map(function(y){return y.id}).indexOf(x.id),nx=sb[i+1],cr=nx?((x.cr||0)+(nx.cr||0))/2:Date.now();FOCUS='new';X[pp.id]=true;await add('tasks',{m:x.m,pa:x.pa,d:'',cat:pp.cat||'',dp:pp.dp||'',w:pp.w||'',s:'new',due:pp.due||'',n:'',cr:cr,dn:0,blk:0,why:'',rv:0,ms:pp.ms||'',dr:pp.dr||0,cl:[],it:[],cm:[],hs:[{t:Date.now(),u:uid||'',m:'اتعملت كتاسك فرعية'}]})}
+document.addEventListener('focusout',function(ev){var el=ev.target;if(!el||!el.classList||!el.classList.contains('sot')||el.dataset.id==='draft'||el.value.trim())return;var id=el.dataset.id;setTimeout(function(){if(el.isConnected&&document.activeElement!==el){var x=g('tasks',id);if(x&&!x.d&&!kids(x.id).length&&!hasCl(x))del('tasks',id)}},180)});
 async function addSub(t,title){var dl=Math.min(DL,maxDL(t)),pp=t;for(var i=1;i<dl;i++){var k=kids(pp.id);if(!k.length)break;pp=k[k.length-1]}
  FOCUS='draft';var r=await add('tasks',{m:t.m,pa:pp.id,d:title,cat:pp.cat||'',dp:pp.dp||'',w:pp.w||'',s:'new',due:pp.due||'',n:'',cr:Date.now(),dn:0,blk:0,why:'',rv:0,ms:pp.ms||'',dr:pp.dr||0,cl:[],it:[],cm:[],hs:[{t:Date.now(),u:uid||'',m:'اتعملت كتاسك فرعية'}]});X[pp.id]=true}
 async function indentRow(x,out){
@@ -118,6 +132,7 @@ async function indentRow(x,out){
   if(lv(prev)+sdepth(x)>3){toast('وصلت لأقصى مستوى (3)');return}FOCUS=x.id;X[prev.id]=true;await tupd(x,{pa:prev.id,cr:Date.now()},'بقت فرعية من: '+prev.d)}
  else{var p=g('tasks',x.pa);if(!p||p.id===TID){toast('دي أول مستوى');return}var sb=kids(p.pa),k=sb.map(function(y){return y.id}).indexOf(p.id),nx=sb[k+1];FOCUS=x.id;await tupd(x,{pa:p.pa,cr:nx?((p.cr||0)+(nx.cr||0))/2:Date.now()},'رجعت لمستوى أعلى')}}
 document.addEventListener('keydown',function(ev){var el=ev.target;
+ if((ev.key==='ArrowLeft'||ev.key==='ArrowRight')&&V==='machine'&&!ev.ctrlKey&&!ev.altKey&&!ev.metaKey&&!ev.shiftKey&&!(el&&(/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)||el.isContentEditable))&&$('modal').className.indexOf('hide')>-1){var nb=document.querySelector('[data-a=mnav][data-d="'+(ev.key==='ArrowLeft'?'1':'-1')+'"]');if(nb&&!nb.disabled){ev.preventDefault();nb.click()}return}
  if(ev.key==='Enter'&&!ev.isComposing&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA')&&!(el.classList&&el.classList.contains('sot'))&&el.type!=='date'){
   if(el.tagName==='TEXTAREA'&&ev.shiftKey)return;
   var inM=el.closest&&el.closest('#modal');
@@ -128,7 +143,7 @@ document.addEventListener('keydown',function(ev){var el=ev.target;
  if(el.tagName==='TEXTAREA'&&(el.id==='f_sb'||el.id==='f_d')&&(ev.key==='Tab'||ev.key==='Escape')){ev.preventDefault();var v=el.value,a=el.selectionStart,ls=v.lastIndexOf('\n',a-1)+1;
   if(ev.shiftKey||ev.key==='Escape'){if(/^[-–—]/.test(v.slice(ls))){el.value=v.slice(0,ls)+v.slice(ls+1);el.setSelectionRange(Math.max(ls,a-1),Math.max(ls,a-1))}}else{el.value=v.slice(0,ls)+'-'+v.slice(ls);el.setSelectionRange(a+1,a+1)}return}
  if(!el.classList||!el.classList.contains('sot'))return;var id=el.dataset.id,t=g('tasks',TID);if(!t)return;
- if(ev.key==='Enter'){ev.preventDefault();if(id==='draft'){var v2=el.value.trim();if(!v2)return;el.value='';addSub(t,v2)}else{var x=g('tasks',id),nv=el.value.trim();if(x&&nv&&nv!==x.d)tupd(x,{d:nv},'غيّر العنوان');var dr=document.querySelector('.sot[data-id="draft"]');if(dr)dr.focus()}}
+ if(ev.key==='Enter'){ev.preventDefault();if(id==='draft'){var v2=el.value.trim();if(!v2)return;el.value='';addSub(t,v2)}else{var x=g('tasks',id),nv=el.value.trim();if(!x||!nv)return;if(nv!==x.d)tupd(x,{d:nv},'غيّر العنوان');insertBelow(x)}}
  else if(ev.key==='Tab'||ev.key==='Escape'){ev.preventDefault();var back=ev.shiftKey||ev.key==='Escape';if(id==='draft'){DL=back?Math.max(1,DL-1):Math.min(maxDL(t),DL+1);render()}else indentRow(g('tasks',id),back)}
  else if(ev.key==='Backspace'&&id!=='draft'&&el.value===''){ev.preventDefault();var y=g('tasks',id);if(y){if(kids(y.id).length||hasCl(y))A.dsub({dataset:{id:id}});else{FOCUS='draft';del('tasks',id)}}}
  else if(ev.key==='ArrowDown'||ev.key==='ArrowUp'){var all=[].slice.call(document.querySelectorAll('.sot')),i2=all.indexOf(el),n=all[i2+(ev.key==='ArrowDown'?1:-1)];if(n){ev.preventDefault();n.focus()}}});

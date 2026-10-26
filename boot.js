@@ -6,7 +6,7 @@
   var r=await SB.from('nw_profiles').select('role,name').eq('uid',uid).maybeSingle();
   if(r.error||!r.data){await SB.auth.signOut();sbShow('حسابك لسه مش مفعّل. كلّم المدير يضيفك.');return}
   ROLE=r.data.role;$('login').className='ov hide';
-  var pr=await SB.from('nw_profiles').select('uid,name');(pr.data||[]).forEach(function(x){PROF[x.uid]=x.name||''});
+  var pr=await SB.from('nw_profiles').select('uid,name,role');(pr.data||[]).forEach(function(x){PROF[x.uid]=x.name||'';PROFR[x.uid]={name:x.name||'',role:x.role}});
   db=sbDB(SB);
   COL.forEach(function(c){db.collection(c).onSnapshot(function(s){S[c]=s.docs.map(function(d){return Object.assign({id:d.id},d.data())}).sort(byO);if($('modal').className.indexOf('hide')>-1)render()},function(){toast('تعذّر تحميل البيانات')})});
   document.querySelector('.nav').insertAdjacentHTML('beforeend','<a data-a="logout">خروج ('+esc(r.data.name||'')+')</a>');
