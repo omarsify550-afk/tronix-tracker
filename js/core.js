@@ -1,8 +1,8 @@
 var ST={new:['لم يبدأ','s-new'],go:['جاري','s-go'],block:['معطّل','s-block'],rev:['بانتظار المراجعة','s-rev'],done:['تم','s-done']};
 var COL=['depts','emps','cats','machines','tasks','tpls','log','specs','groups','mstones','files'];
-var S={},V='dash',MID=null,TID=null,FOCUS=null,DL=1,F={st:'all',dp:''},D={dp:'',ms:[],open:0,st:'open'},X={},PC={bw:0,det:1,brk:1},ME='',PR,db=null,U=null,uid=null;
+var S={},V='dash',MID=null,TID=null,FOCUS=null,DL=1,F={st:'all',dp:''},D={dp:'',ms:[],open:0,st:'open'},X={},PC={bw:0,det:1,brk:1,or:0},ME='',PR,db=null,U=null,uid=null;
 COL.forEach(function(c){S[c]=[]});
-try{var _p=JSON.parse(localStorage.getItem('tronix_pc')||'{}');PC.bw=_p.bw?1:0;PC.det=_p.det===0?0:1;PC.brk=_p.brk===0?0:1;ME=localStorage.getItem('tronix_me')||''}catch(e){}
+try{var _p=JSON.parse(localStorage.getItem('tronix_pc')||'{}');PC.bw=_p.bw?1:0;PC.det=_p.det===0?0:1;PC.brk=_p.brk===0?0:1;PC.or=_p.or?1:0;ME=localStorage.getItem('tronix_me')||''}catch(e){}
 var PROF={},ROLE='local',SBM=false;
 var RL={admin:'مدير النظام',manager:'مدير مصنع / تخطيط',supervisor:'مشرف قسم',worker:'موظف',viewer:'مشاهدة فقط'},SUPV=',newt,pub,dcn,dt,dsub,ak,ap,fromgrp,cpt,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,';
 function can(a){if(ROLE==='admin'||ROLE==='manager'||ROLE==='local')return true;return ROLE==='supervisor'&&!!a&&SUPV.indexOf(','+a+',')>-1}

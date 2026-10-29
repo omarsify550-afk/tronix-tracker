@@ -117,9 +117,13 @@ eacc:function(e){if(ROLE!=='admin'||!ACC)return;var a=ACC.filter(function(x){ret
   (async function(){var r=await sbAdmin({op:'update',uid:a.uid,name:nmv,role:me?'admin':v.role,password:v.pw||''});if(!r)return;PROF[a.uid]=nmv;lg('تعديل حساب: '+nmv);toast('اتحدّث الحساب');loadAcc()})()},
   me?{ok:'حفظ'}:{ok:'حفظ',del:function(){(async function(){var r=await sbAdmin({op:'delete',uid:a.uid});if(!r)return;S.emps.filter(function(x){return x.uid===a.uid}).forEach(function(x){upd('emps',x.id,{uid:''})});lg('حذف حساب: '+(a.name||a.email));toast('اتحذف الحساب');loadAcc()})()}})},
 racc:function(){loadAcc()},
+mlay:function(e){ML=e.dataset.v==='l'?'l':'g';try{localStorage.setItem('tronix_ml',ML)}catch(x){}render()},
+pcor:function(e){PC.or=+e.value;svPC();render()},
+pemps:function(){if(!S.emps.length){toast('لا يوجد موظفين');return}printDoc(empDoc())},
 deltpl:function(e){var x=g('tpls',e.dataset.id);ask('حذف القالب «'+esc(x.n)+'»؟',function(){del('tpls',x.id)})}
 };
 var ev0=null,DR=null;
+document.addEventListener('input',function(ev){var el=ev.target;if(!el||el.id!=='msq')return;MQ=el.value;mfilt()});
 function cenx(el){var t=g('tasks',el.dataset.id),c=+el.dataset.c,i=+el.dataset.i,v=el.value.trim();if(!t||!CL(t)[c])return;
  if(el.id==='cd'){if(!v){CD=null;FOCUS='ni'+c;render();return}
   var x=CL(t)[c].k==='c'?parseLines(v,'c')[0]:{n:v};CD={t:t.id,c:c,i:i+1};FOCUS='cd';
