@@ -137,3 +137,6 @@ tr[draggable]{cursor:grab}
 .it input.cit:focus{border-bottom-color:var(--red);outline:0}
 .it.draft{background:transparent;border:1px dashed var(--g2)}
 .it.draft input.cit{border-bottom:0}
+.grid.lst{grid-template-columns:1fr}
+.tools input[type=search]{padding:8px 10px;border:1px solid var(--g2);border-radius:8px;font:inherit}
+#pr.ls .pg{min-height:199mm}#pr.ls .lines{height:60mm}
