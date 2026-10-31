@@ -62,3 +62,20 @@ function deptBody(pr){var r=deptGroups(),out=[];
  return out.join('')}
 function empDoc(){var gs=S.depts.map(function(d){return {n:d.n,h:d.head,e:S.emps.filter(function(e){return e.dp===d.id})}}),un=S.emps.filter(function(e){return !g('depts',e.dp)});if(un.length)gs.push({n:'بدون قسم',h:'',e:un});
  return gs.filter(function(x){return x.e.length}).map(function(x){return pg('موظفين قسم '+esc(x.n),'قائمة الأسماء',[['عدد الموظفين',x.e.length],['مسؤول القسم',esc(x.h&&g('emps',x.h)?nm('emps',x.h):'-')]],'<table><tr><th style="width:34px">م</th><th>الاسم</th><th>الوظيفة</th><th>ملاحظات</th></tr>'+x.e.map(function(e,i){return '<tr><td class="nw">'+(i+1)+'</td><td>'+(x.h===e.id?'★ ':'')+esc(e.n)+'</td><td>'+esc(e.role||'')+'</td><td></td></tr>'}).join('')+'</table>',"<span>اعتماد مدير القسم</span><span>اعتماد الإدارة</span>")}).join('')}
+function lateDoc(dp){return lateGroups(dp).map(function(x){var hd=x.d.head&&g('emps',x.d.head)?nm('emps',x.d.head):'-';return pg('المتأخر — '+esc(x.d.n),'حتى '+TODAY+' — مرتّب بالأقدم أولًا',[['عدد البنود المتأخرة',x.r.length],['أقدم تأخير',x.r[0].dl+' يوم'],['مسؤول القسم',esc(hd)]],'<table><tr><th style="width:30px">م</th><th>الماكينة</th><th>التاسك</th><th>البند</th><th>المسؤول</th><th>المسؤول الفعلي</th><th>الاستحقاق</th><th>التأخير</th><th>ملاحظات</th></tr>'+x.r.map(function(r,i){return '<tr><td class="nw">'+(i+1)+'</td><td>'+esc(nm('machines',r.t.m))+'</td><td>'+tnm(r.t)+'</td><td>'+esc(r.u.i?r.u.i.n:'')+'</td><td class="nw">'+esc(nm('emps',r.u.r))+'</td><td class="nw"></td><td class="nw">'+esc(r.u.due)+'</td><td class="nw"><b class="late">'+r.dl+' يوم</b></td><td>'+(r.u.i&&r.u.i.pb?'⚠ '+esc(r.u.i.pb):'')+'</td></tr>'}).join('')+'</table>')}).join('')}
+function xlsxBook(kind){var X=window.XLSX;if(!X){toast('مكتبة Excel مش متحمّلة. اتأكد من الإنترنت وجرّب تاني');return}
+ var wb=X.utils.book_new();
+ function sh(name,head,rows,w){var ws=X.utils.aoa_to_sheet([head].concat(rows));ws['!cols']=w.map(function(x){return {wch:x}});X.utils.book_append_sheet(wb,ws,name)}
+ function nz(c,id){var x=id?g(c,id):null;return x?x.n:''}
+ var lr=[];lateGroups('').forEach(function(x){x.r.forEach(function(r){lr.push([x.d.n,nm('machines',r.t.m),(r.t.pa?crumb(r.t)+' ‹ ':'')+r.t.d,r.u.i?r.u.i.n:'',nz('emps',r.u.r),r.u.due,r.dl])})});
+ var lh=['القسم','الماكينة','التاسك','البند','المسؤول','الاستحقاق','أيام التأخير'],lw=[16,22,36,28,18,14,12];
+ if(kind==='late'){sh('المتأخر',lh,lr,lw)}
+ else{
+  sh('الماكينات',['الماكينة / المشروع','النوع','الحالة','تاريخ التسليم','الإنجاز %','عدد العناصر','المتبقي','تنبيه'],CT().map(function(m){return [m.n,m.fac?'مشروع مصنع':(m.typ||''),MST[mstat(m)],m.dl||'',pct(mt(m.id)),UA(mt(m.id)).length,m.dl?dtxt(m):'',risk(m)]}),[26,16,16,14,12,12,16,18]);
+  var tr=[],br=[];
+  AT().forEach(function(t){var p=prog(t),s=ts(t);tr.push([nm('machines',t.m),(t.pa?crumb(t)+' ‹ ':'')+t.d,lv(t),dn(t.dp),nz('cats',t.cat),nz('emps',t.w),t.due||'',ST[s][0],p[1]?Math.round(p[0]/p[1]*100):0,p[0],p[1],late(t)?'نعم':'لا',s==='block'?(t.why||''):(t.n||'')]);
+   CL(t).forEach(function(c){c.it.forEach(function(i){br.push([nm('machines',t.m),(t.pa?crumb(t)+' ‹ ':'')+t.d,c.n,i.n,c.k==='c'?'مكوّن':'مرحلة',i.q||1,c.k==='c'?(i.av||i.dn?'نعم':'لا'):'',i.dn?'نعم':'لا',nz('emps',i.r||t.w),i.pb||''])})})});
+  sh('التاسكات',['الماكينة','التاسك','المستوى','القسم','التصنيف','المسؤول','الاستحقاق','الحالة','الإنجاز %','خلص','الإجمالي','متأخر','ملاحظات / سبب التعطيل'],tr,[22,38,9,16,16,18,14,16,11,8,10,9,30]);
+  sh('البنود',['الماكينة','التاسك','الـ Checklist','البند','النوع','الكمية','متوفر','تم / مركّب','المسؤول','مشكلة'],br,[22,36,18,30,10,9,9,11,18,26]);
+  sh('المتأخر',lh,lr,lw)}
+ wb.Workbook={Views:[{RTL:true}]};X.writeFile(wb,'tronix-tracker-'+(kind==='late'?'late-':'')+TODAY+'.xlsx')}

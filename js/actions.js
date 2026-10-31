@@ -100,7 +100,7 @@ var A={
  editsp:function(e){var x=g('specs',e.dataset.id);modal('تعديل الخانة',[{k:'n',l:'الاسم',v:x.n}],function(v){if(!v.n.trim())return false;upd('specs',x.id,{n:v.n.trim()});lg('تعديل خانة مواصفات: '+v.n)},{del:function(){del('specs',x.id);lg('حذف خانة مواصفات: '+x.n)}})},
  mvup:function(e){mv(e.dataset.c,e.dataset.id,-1)},mvdn:function(e){mv(e.dataset.c,e.dataset.id,1)},
  logout:async function(){await SB.auth.signOut();location.reload()},
- sbexp:function(){var o={};COL.forEach(function(c){o[c]={};S[c].forEach(function(x){var d=Object.assign({},x);delete d.id;o[c][x.id]=d})});var b=new Blob([JSON.stringify(o)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tronix-tracker-backup-'+TODAY+'.json';a.click()},
+ sbexp:function(){var o={};COL.forEach(function(c){o[c]={};S[c].forEach(function(x){var d=Object.assign({},x);delete d.id;o[c][x.id]=d})});var b=new Blob([JSON.stringify(o)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tronix-tracker-backup-'+TODAY+'.json';a.click();try{localStorage.setItem('tronix_bk',TODAY)}catch(x){}render()},
  sbimp:function(){var i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=function(){var r=new FileReader();r.onload=async function(){try{var o=JSON.parse(r.result),rows=[];COL.forEach(function(c){var m=o[c]||{};Object.keys(m).forEach(function(id){rows.push({col:c,id:id,data:m[id]})})});if(!rows.length){toast('الملف فاضي');return}for(var k=0;k<rows.length;k+=200){var q=await SB.from('nw_docs').upsert(rows.slice(k,k+200));if(q.error)throw q.error}await db.reload();toast('اتستورد '+rows.length+' عنصر')}catch(e){toast('فشل الاستيراد: '+(e.message||'ملف غير صالح'))}};r.readAsText(i.files[0])};i.click()},
  cin:function(e){var t=g('tasks',e.dataset.id),c=+e.dataset.c,i=+e.dataset.i,v=e.value.trim();if(!t||!CL(t)[c])return;var it=CL(t)[c].it[i];if(!it)return;if(!v){toast('اسم البند مينفعش يبقى فاضي');render();return}if(v!==it.n)mutCl(t,function(cl){cl[c].it[i].n=v},'عدّل بند: '+v)},
 mvm:function(e){var t=g('tasks',TID),to=e.value,m2=g('machines',to);if(!t||!m2||to===t.m)return;var all=[t].concat(desc(t.id)),fromN=nm('machines',t.m);
@@ -120,6 +120,9 @@ racc:function(){loadAcc()},
 mlay:function(e){ML=e.dataset.v==='l'?'l':'g';try{localStorage.setItem('tronix_ml',ML)}catch(x){}render()},
 pcor:function(e){PC.or=+e.value;svPC();render()},
 pemps:function(){if(!S.emps.length){toast('لا يوجد موظفين');return}printDoc(empDoc())},
+ltdp:function(e){LT.dp=e.value;render()},
+printlate:function(){if(!lateGroups(LT.dp).length){toast('مفيش متأخر للطباعة');return}printDoc(lateDoc(LT.dp))},
+xlsx:function(e){xlsxBook(e.dataset.k||'all')},
 deltpl:function(e){var x=g('tpls',e.dataset.id);ask('حذف القالب «'+esc(x.n)+'»؟',function(){del('tpls',x.id)})}
 };
 var ev0=null,DR=null;
@@ -144,6 +147,7 @@ async function indentRow(x,out){
   if(lv(prev)+sdepth(x)>3){toast('وصلت لأقصى مستوى (3)');return}FOCUS=x.id;X[prev.id]=true;await tupd(x,{pa:prev.id,cr:Date.now()},'بقت فرعية من: '+prev.d)}
  else{var p=g('tasks',x.pa);if(!p||p.id===TID){toast('دي أول مستوى');return}var sb=kids(p.pa),k=sb.map(function(y){return y.id}).indexOf(p.id),nx=sb[k+1];FOCUS=x.id;await tupd(x,{pa:p.pa,cr:nx?((p.cr||0)+(nx.cr||0))/2:Date.now()},'رجعت لمستوى أعلى')}}
 document.addEventListener('keydown',function(ev){var el=ev.target;if(ev.key==='Escape'&&el.id==='cd'){CD=null;render();return}
+ if((ev.key==='ArrowRight'||ev.key==='ArrowLeft')&&V==='machine'&&MID&&!ev.ctrlKey&&!ev.altKey&&!ev.metaKey&&!ev.shiftKey&&el&&!el.isContentEditable&&el.tagName!=='TEXTAREA'&&el.tagName!=='SELECT'&&!(el.tagName==='INPUT'&&!/^(checkbox|radio|button)$/.test(el.type))&&$('modal').className.indexOf('hide')>-1){var cm=g('machines',MID);if(cm){var ml=cm.ar?[]:(cm.fac?PJ():mSorted()),mi=ml.map(function(x){return x.id}).indexOf(cm.id),mj=mi+(ev.key==='ArrowLeft'?1:-1);if(mi>-1&&mj>=0&&mj<ml.length){ev.preventDefault();A.open({dataset:{id:ml[mj].id}})}return}}
  if(ev.key==='Enter'&&!ev.isComposing&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA')&&!(el.classList&&el.classList.contains('sot'))&&el.type!=='date'){
   if(el.tagName==='TEXTAREA'&&ev.shiftKey)return;
   var inM=el.closest&&el.closest('#modal');
