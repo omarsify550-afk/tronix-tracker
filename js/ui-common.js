@@ -45,19 +45,20 @@ function specRows(m){if(m.fac)return [['النوع',m.cat],['المسؤول',nm(
 function specDoc(m){var r=specRows(m);return pg('المواصفات الفنية',esc(m.n),null,'<div class="kc">'+r.slice(0,3).concat([r[4]]).map(function(x){return '<div><small>'+esc(x[0])+'</small><b>'+esc(x[1]||'-')+'</b></div>'}).join('')+'</div><div class="sec">تفاصيل الماكينة</div><div class="sp">'+r.slice(3,4).concat(r.slice(5)).map(function(x){return '<div><small>'+esc(x[0])+'</small><b>'+esc(x[1]||'-')+'</b></div>'}).join('')+'</div><div class="sec">ملاحظات</div><div class="lines"></div>',"<span>اعتماد الإنتاج</span><span>اعتماد الجودة</span>")}
 function mtF(id){return mt(id).filter(function(t){return (F.st==='all'||ts(t)===F.st)&&(!F.dp||t.dp===F.dp)&&(!F.ms||t.ms===F.ms)}).sort(byCr)}
 function mTasksDoc(m){var a=mtF(m.id),ds=[];a.forEach(function(t){if(ds.indexOf(t.dp||'')<0)ds.push(t.dp||'')});
- return ds.map(function(d){var x=a.filter(function(t){return (t.dp||'')===d}),u=UA(x);return pg('تاسكات '+esc(dn(d)),'ماكينة '+esc(m.n)+(m.dl?' — تسليم: '+esc(m.dl):''),[['عدد التاسكات',x.length],['العناصر الناقصة',u.filter(function(y){return !y.d}).length],['المتأخر',u.filter(lateU).length],['نسبة الإنجاز',pct(x)+'%']],ttab(x))}).join('')}
+ var okm=function(k){return a.indexOf(k)>-1},inc={};ds.forEach(function(d){if(d)withKids(a.filter(function(t){return t.dp===d}),okm).forEach(function(t){inc[t.id]=1})});
+ return ds.map(function(d){var x=tord(d?withKids(a.filter(function(t){return t.dp===d}),okm):a.filter(function(t){return !t.dp&&!inc[t.id]})),u=UA(x);return pg('تاسكات '+esc(dn(d)),'ماكينة '+esc(m.n)+(m.dl?' — تسليم: '+esc(m.dl):''),[['عدد التاسكات',x.length],['العناصر الناقصة',u.filter(function(y){return !y.d}).length],['المتأخر',u.filter(lateU).length],['نسبة الإنجاز',pct(x)+'%']],ttab(x))}).join('')}
 function deptGroups(){
  var ms=D.ms.length?CT().filter(function(m){return D.ms.indexOf(m.id)>-1}):CT(),ids=ms.map(function(m){return m.id});
- var a=S.tasks.filter(function(t){return !t.dr&&ids.indexOf(t.m)>-1&&(!D.dp||t.dp===D.dp)&&(D.st==='all'||(D.st==='open'?ts(t)!=='done':ts(t)===D.st))});
- var gs=S.depts.filter(function(d){return !D.dp||d.id===D.dp}).map(function(d){return {d:d,t:a.filter(function(t){return t.dp===d.id})}});
- if(!D.dp){var un=a.filter(function(t){return !g('depts',t.dp)});if(un.length)gs.push({d:{n:'بدون قسم'},t:un})}
+ var ok=function(t){return !t.dr&&ids.indexOf(t.m)>-1&&(D.st==='all'||(D.st==='open'?ts(t)!=='done':ts(t)===D.st))},a=S.tasks.filter(function(t){return ok(t)&&(!D.dp||t.dp===D.dp)});
+ var gs=S.depts.filter(function(d){return !D.dp||d.id===D.dp}).map(function(d){return {d:d,t:withKids(a.filter(function(t){return t.dp===d.id}),ok)}});
+ if(!D.dp){var inG={};gs.forEach(function(x){x.t.forEach(function(t){inG[t.id]=1})});var un=a.filter(function(t){return !g('depts',t.dp)&&!inG[t.id]});if(un.length)gs.push({d:{n:'بدون قسم'},t:un})}
  return {gs:gs.filter(function(x){return x.t.length}),ms:ms}}
 function mhead(m){return '<div class="gh'+(m.fac?' gh2':'')+'"><b>'+(m.fac?'مشروع مصنع: ':'')+esc(m.n)+'</b><span>'+(m.dl?(m.fac?'الهدف: ':'تسليم: ')+esc(m.dl)+' — '+dtxt(m):'')+'</span></div>'}
 function deptBody(pr){var r=deptGroups(),out=[];
  r.gs.forEach(function(x){var hd=x.d.head&&g('emps',x.d.head)?nm('emps',x.d.head):'-',ms=r.ms.filter(function(m){return x.t.some(function(t){return t.m===m.id})});
   function bx(t){var u=UA(t);return [['عدد التاسكات',t.length],['العناصر الناقصة',u.filter(function(y){return !y.d}).length],['المتأخر',u.filter(lateU).length],['مسؤول القسم',esc(hd)]]}
-  if(pr&&PC.brk){ms.forEach(function(m){var t=x.t.filter(function(y){return y.m===m.id}).sort(byCr);out.push(pg('تاسكات '+esc(x.d.n),(m.fac?'مشروع مصنع ':'ماكينة ')+esc(m.n)+(m.dl?' — '+(m.fac?'الهدف':'تسليم')+': '+esc(m.dl)+' — '+dtxt(m):''),bx(t),ttab(t)))})}
-  else{var spj=0,inner=ms.map(function(m){var t=x.t.filter(function(y){return y.m===m.id}).sort(byCr);var sepH=(m.fac&&!spj)?(spj=1,pr?'':'<div class="sep2h">مشاريع المصنع</div>'):'';return sepH+(pr?mband(m)+ttab(t)+'<div class="mgap"></div>':mhead(m)+'<div class="gp">'+ttab(t)+'</div><div class="mgap"></div>')}).join('');
+  if(pr&&PC.brk){ms.forEach(function(m){var t=tord(x.t.filter(function(y){return y.m===m.id}));out.push(pg('تاسكات '+esc(x.d.n),(m.fac?'مشروع مصنع ':'ماكينة ')+esc(m.n)+(m.dl?' — '+(m.fac?'الهدف':'تسليم')+': '+esc(m.dl)+' — '+dtxt(m):''),bx(t),ttab(t)))})}
+  else{var spj=0,inner=ms.map(function(m){var t=tord(x.t.filter(function(y){return y.m===m.id}));var sepH=(m.fac&&!spj)?(spj=1,pr?'':'<div class="sep2h">مشاريع المصنع</div>'):'';return sepH+(pr?mband(m)+ttab(t)+'<div class="mgap"></div>':mhead(m)+'<div class="gp">'+ttab(t)+'</div><div class="mgap"></div>')}).join('');
    out.push(pr?pg('تاسكات '+esc(x.d.n),'مرتبة بتاريخ تسليم الماكينة (الأقرب أولًا)',bx(x.t),inner):'<div class="dg"><h2>'+esc(x.d.n)+' <small>— المسؤول: '+esc(hd)+'</small></h2>'+inner+'</div>')}});
  return out.join('')}
 function empDoc(){var gs=S.depts.map(function(d){return {n:d.n,h:d.head,e:S.emps.filter(function(e){return e.dp===d.id})}}),un=S.emps.filter(function(e){return !g('depts',e.dp)});if(un.length)gs.push({n:'بدون قسم',h:'',e:un});
@@ -79,3 +80,5 @@ function xlsxBook(kind){var X=window.XLSX;if(!X){toast('مكتبة Excel مش م
   sh('البنود',['الماكينة','التاسك','الـ Checklist','البند','النوع','الكمية','متوفر','تم / مركّب','المسؤول','مشكلة'],br,[22,36,18,30,10,9,9,11,18,26]);
   sh('المتأخر',lh,lr,lw)}
  wb.Workbook={Views:[{RTL:true}]};X.writeFile(wb,'tronix-tracker-'+(kind==='late'?'late-':'')+TODAY+'.xlsx')}
+function withKids(own,ok){var seen={},ex=[];own.forEach(function(t){seen[t.id]=1});own.forEach(function(t){desc(t.id).forEach(function(k){if(!seen[k.id]&&ok(k)){seen[k.id]=1;ex.push(k)}})});return own.concat(ex)}
+function tord(a){var ids={},o=[];a.forEach(function(t){ids[t.id]=1});function add(t){o.push(t);a.filter(function(k){return k.pa===t.id}).sort(byCr).forEach(add)}a.filter(function(t){return !t.pa||!ids[t.pa]}).sort(byCr).forEach(add);return o}
