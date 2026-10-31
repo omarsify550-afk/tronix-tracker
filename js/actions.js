@@ -1,6 +1,6 @@
 var A={
  go:function(e){V=e.dataset.v;MID=null;render()},
- open:function(e){MID=e.dataset.id;V='machine';F={st:'all',dp:''};render()},
+ open:function(e){MID=e.dataset.id;V='machine';F={st:'all',dp:''};TQ='';render()},
  cell:function(e){MID=e.dataset.id;V='machine';F={st:'all',dp:e.dataset.dp};render()},
  newm:function(e,pre){modal('ماكينة جديدة',fMachine({src:pre},'new'),function(v){if(!v.n.trim()){toast('اكتب اسم الماكينة');return false}
   (async function(){var sm=g('machines',v.src),mm=(sm&&sm.ms&&sm.ms.length)?sm.ms.map(function(x){return Object.assign({},x,{ap:0,man:0})}):msTpl();var r=await add('machines',{n:v.n.trim(),typ:v.typ,pw:v.pw,dim:v.dim,yr:v.yr,dl:v.dl,sp:spOf(v),ar:0,st:'new',ms:mm});if(!r)return;lg('إضافة ماكينة: '+v.n);
@@ -123,6 +123,9 @@ pemps:function(){if(!S.emps.length){toast('لا يوجد موظفين');return}p
 ltdp:function(e){LT.dp=e.value;render()},
 printlate:function(){if(!lateGroups(LT.dp).length){toast('مفيش متأخر للطباعة');return}printDoc(lateDoc(LT.dp))},
 xlsx:function(e){xlsxBook(e.dataset.k||'all')},
+tgl:function(e){var k=e.dataset.k;UI[k]=UI[k]?0:1;render()},
+ssel:function(e){if(!can('ss')){toast('مفيش صلاحية لهذا الإجراء');render();return}A.ss({dataset:{k:e.value}})},
+tq:function(e){TQ=e.value;render()},
 deltpl:function(e){var x=g('tpls',e.dataset.id);ask('حذف القالب «'+esc(x.n)+'»؟',function(){del('tpls',x.id)})}
 };
 var ev0=null,DR=null;
