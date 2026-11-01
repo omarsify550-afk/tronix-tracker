@@ -9,9 +9,9 @@ var A={
   await mkTree(r.id,nodes,'');MID=r.id;V='machine';F={st:'all',dp:''};render()})()},{init:function(){var s=$('f_src');s.onchange=function(){var m=g('machines',s.value);if(!m)return;$('f_n').value=m.n+' (نسخة)';['typ','pw','dim','yr'].forEach(function(k){$('f_'+k).value=m[k]||''});$('f_dl').value='';specs().forEach(function(x){$('f_sp_'+x.id).value=(m.sp||{})[x.id]||''})};if(pre)s.onchange()}})},
  copym:function(e){A.newm(e,e.dataset.id)},
  editm:function(e){var m=g('machines',e.dataset.id);modal('تعديل الماكينة',fMachine(m,'edit'),function(v){if(!v.n.trim())return false;upd('machines',m.id,{n:v.n.trim(),typ:v.typ,pw:v.pw,dim:v.dim,yr:v.yr,dl:v.dl,sp:spOf(v)});lg('تعديل ماكينة: '+v.n)})},
- delm:function(e){if(ev0)ev0.stopPropagation();var m=g('machines',e.dataset.id);modal('أرشفة / حذف: '+esc(m.n),[{k:'mode',l:'الإجراء',t:'select',o:[['a','أرشفة (موصى بها): تختفي من القوائم وتظهر في «المؤرشفة»'],['d','حذف نهائي مع كل تاسكاتها ('+mt(m.id).length+' تاسك)']]},{k:'cf',l:'للحذف النهائي فقط: اكتب اسم الماكينة للتأكيد'}],function(v){
+ delm:function(e){if(ev0)ev0.stopPropagation();var m=g('machines',e.dataset.id);modal('أرشفة / حذف: '+esc(m.n),[{k:'mode',l:'الإجراء',t:'select',o:[['a','أرشفة (موصى بها): تختفي من القوائم وتظهر في «المؤرشفة»'],['d','حذف مع كل تاسكاتها ('+mt(m.id).length+' تاسك): بتروح السلة 30 يوم']]},{k:'cf',l:'للحذف فقط: اكتب اسم الماكينة للتأكيد'}],function(v){
   if(v.mode==='a'){upd('machines',m.id,{ar:1});lg('أرشفة ماكينة: '+m.n);if(V==='machine'||V==='task'){V='machines';MID=null}}
-  else{if(v.cf.trim()!==m.n){toast('اسم الماكينة غير مطابق');return false}S.tasks.filter(function(x){return x.m===m.id}).forEach(function(t){del('tasks',t.id)});del('machines',m.id);lg('حذف ماكينة: '+m.n);V=(V==='machine'||V==='task')?'arch':V;MID=null}})},
+  else{if(v.cf.trim()!==m.n){toast('اسم الماكينة غير مطابق');return false}V=(V==='machine'||V==='task')?'arch':V;MID=null;trashMachine(m);lg('حذف ماكينة: '+m.n)}})},
  restm:function(e){if(ev0)ev0.stopPropagation();var m=g('machines',e.dataset.id);upd('machines',m.id,{ar:0});lg('استرجاع ماكينة: '+m.n);toast('اتسترجعت')},
  savetpl:function(e){var m=g('machines',e.dataset.id);modal('حفظ التاسكات كقالب',[{k:'n',l:'اسم القالب (مثلًا الموديل)',v:m.typ||m.n}],function(v){if(!v.n.trim())return false;add('tpls',{n:v.n.trim(),items:roots(m.id).map(nodeOf)});lg('حفظ قالب: '+v.n)})},
  printspecs:function(e){printDoc(specDoc(g('machines',e.dataset.id)))},
@@ -23,7 +23,7 @@ var A={
  od:function(e){var t=g('tasks',e.dataset.id);if(!t)return;DL=1;TID=t.id;MID=t.m;V='task';render()},
  chk:function(e){var t=g('tasks',e.dataset.id);if(e.checked)closeT(t);else reopen(t)},
  sot:function(e){var t=g('tasks',e.dataset.id),v=e.value.trim();if(!t)return;if(v&&v!==t.d)tupd(t,{d:v},'غيّر العنوان');else if(!v)render()},
- dsub:function(e){var t=g('tasks',e.dataset.id),d=desc(t.id);var go=function(){d.forEach(function(x){del('tasks',x.id)});del('tasks',t.id);lg('حذف تاسك فرعية: '+t.d)};if(d.length||hasCl(t))ask('هيتحذف «'+esc(t.d)+'»'+(d.length?' و'+d.length+' تاسك تحتها':'')+'. متأكد؟',go);else go()},
+ dsub:function(e){var t=g('tasks',e.dataset.id),d=desc(t.id);var go=function(){trashTasks(t);lg('حذف تاسك فرعية: '+t.d)};if(d.length||hasCl(t))ask('هيتحذف «'+esc(t.d)+'»'+(d.length?' و'+d.length+' تاسك تحتها':'')+'. متأكد؟',go);else go()},
  tg:function(e){X[e.dataset.id]=X[e.dataset.id]!==true;render()},
  auc:function(e){tupd(g('tasks',TID),{au:e.checked?1:0},e.checked?'فعّل الإقفال التلقائي':'طفّى الإقفال التلقائي');toast(e.checked?'الإقفال التلقائي شغال':'الإقفال التلقائي مقفول: حالة الأم بتتغير يدوي')},
  parc:function(e){if(!e.value)return;tupd(g('tasks',TID),{pa:e.value,cr:Date.now()},'غيّر المهمة الأم');toast('اتغيّرت المهمة الأم')},
@@ -37,7 +37,7 @@ var A={
  go:function(e){if(e.dataset.v){V=e.dataset.v;MID=null;TID=null;render();return}tupd(g('tasks',TID),{s:'go'},'بدأت')},
  bk:function(){var t=g('tasks',TID);modal('تعطيل التاسك',[{k:'w',l:'السبب (مستني إيه / مين)',t:'textarea'}],function(v){tupd(t,{blk:1,why:v.w.trim()},'اتعطّلت: '+v.w.trim())})},
  ub:function(){var t=g('tasks',TID);tupd(t,{blk:0,why:'',s:t.s==='block'?'new':t.s},'اتلغى التعطيل')},
- dt:function(e){var id=(e&&e.dataset&&e.dataset.id)||TID,t=g('tasks',id),d=desc(t.id);ask('هيتحذف «'+esc(t.d)+'»'+(d.length?' و'+d.length+' تاسك فرعية':'')+'. لا يمكن التراجع.',function(){d.forEach(function(x){del('tasks',x.id)});del('tasks',t.id);lg('حذف تاسك: '+t.d);if(V==='task'&&TID===t.id){V='machine';MID=t.m;TID=null}render()})},
+ dt:function(e){var id=(e&&e.dataset&&e.dataset.id)||TID,t=g('tasks',id),d=desc(t.id);ask('هيتحذف «'+esc(t.d)+'»'+(d.length?' و'+d.length+' تاسك فرعية':'')+'. بتروح السلة وتقدر تسترجعها 30 يوم.',function(){if(V==='task'&&TID===t.id){V='machine';MID=t.m;TID=null}trashTasks(t);lg('حذف تاسك: '+t.d);render()})},
  ti:function(e){var t=g('tasks',TID),v=e.value.trim();if(v&&v!==t.d)tupd(t,{d:v},'غيّر العنوان')},
  dpc:function(e){var t=g('tasks',TID),o={dp:e.value},emp=g('emps',t.w);if(t.w&&(!emp||emp.dp!==e.value)){var dd=g('depts',e.value),h=dd&&dd.head?g('emps',dd.head):null;o.w=(h&&h.dp===e.value)?h.id:''}tupd(t,o,'غيّر القسم: '+dn(e.value))},
  rsc:function(e){tupd(g('tasks',TID),{w:e.value},'غيّر المسؤول: '+nm('emps',e.value))},
@@ -98,10 +98,14 @@ var A={
  editc:function(e){var x=g('cats',e.dataset.id);modal('تعديل التصنيف',[{k:'n',l:'الاسم',v:x.n},{k:'dp',l:'القسم المسؤول',t:'select',o:opts('depts',1),v:x.dp}],function(v){if(!v.n.trim())return false;upd('cats',x.id,{n:v.n.trim(),dp:v.dp});lg('تعديل تصنيف: '+v.n)},{del:function(){del('cats',x.id)}})},
  newsp:function(){modal('خانة مواصفات جديدة',[{k:'n',l:'اسم الخانة (مثلًا Laser Head)'}],function(v){if(!v.n.trim())return false;add('specs',{n:v.n.trim(),cr:Date.now()});lg('إضافة خانة مواصفات: '+v.n)},{again:true,clear:['n']})},
  editsp:function(e){var x=g('specs',e.dataset.id);modal('تعديل الخانة',[{k:'n',l:'الاسم',v:x.n}],function(v){if(!v.n.trim())return false;upd('specs',x.id,{n:v.n.trim()});lg('تعديل خانة مواصفات: '+v.n)},{del:function(){del('specs',x.id);lg('حذف خانة مواصفات: '+x.n)}})},
+ undo:function(e){restoreGroup(e.dataset.g);var q=$('undo');if(q)q.remove()},
+ trr:function(e){restoreGroup(e.dataset.g)},
+ trx:function(e){var gid=e.dataset.g,o=trGroups().filter(function(x){return x.g===gid})[0];if(!o)return;ask('حذف نهائي لـ «'+esc(o.root.c==='machines'?o.root.x.n:o.root.x.d)+'»'+(o.nt>1?' و'+(o.nt-1)+' تاسك معاه':'')+'؟ لا يمكن التراجع.',function(){trPurge(gid);lg('حذف نهائي من السلة')})},
+ trclr:function(){var n=trGroups().length;if(!n)return;ask('إفراغ السلة نهائيًا ('+n+' عنصر)؟ لا يمكن التراجع.',function(){trGroups().forEach(function(o){trPurge(o.g)});lg('إفراغ السلة')})},
  mvt:function(e){moveTask(e.dataset.id,+e.dataset.d)},mvi:function(e){moveItem(e.dataset.id,+e.dataset.c,+e.dataset.i,+e.dataset.d)},
  mvup:function(e){mv(e.dataset.c,e.dataset.id,-1)},mvdn:function(e){mv(e.dataset.c,e.dataset.id,1)},
  logout:async function(){await SB.auth.signOut();location.reload()},
- sbexp:function(){var o={};COL.forEach(function(c){o[c]={};S[c].forEach(function(x){var d=Object.assign({},x);delete d.id;o[c][x.id]=d})});var b=new Blob([JSON.stringify(o)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tronix-tracker-backup-'+TODAY+'.json';a.click();try{localStorage.setItem('tronix_bk',TODAY)}catch(x){}render()},
+ sbexp:function(){var o={};COL.forEach(function(c){o[c]={};S[c].concat(TR[c]||[]).forEach(function(x){var d=Object.assign({},x);delete d.id;o[c][x.id]=d})});var b=new Blob([JSON.stringify(o)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tronix-tracker-backup-'+TODAY+'.json';a.click();try{localStorage.setItem('tronix_bk',TODAY)}catch(x){}render()},
  sbimp:function(){var i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=function(){var r=new FileReader();r.onload=async function(){try{var o=JSON.parse(r.result),rows=[];COL.forEach(function(c){var m=o[c]||{};Object.keys(m).forEach(function(id){rows.push({col:c,id:id,data:m[id]})})});if(!rows.length){toast('الملف فاضي');return}for(var k=0;k<rows.length;k+=200){var q=await SB.from('nw_docs').upsert(rows.slice(k,k+200));if(q.error)throw q.error}await db.reload();toast('اتستورد '+rows.length+' عنصر')}catch(e){toast('فشل الاستيراد: '+(e.message||'ملف غير صالح'))}};r.readAsText(i.files[0])};i.click()},
  cin:function(e){var t=g('tasks',e.dataset.id),c=+e.dataset.c,i=+e.dataset.i,v=e.value.trim();if(!t||!CL(t)[c])return;var it=CL(t)[c].it[i];if(!it)return;if(!v){toast('اسم البند مينفعش يبقى فاضي');render();return}if(v!==it.n)mutCl(t,function(cl){cl[c].it[i].n=v},'عدّل بند: '+v)},
 mvm:function(e){var t=g('tasks',TID),to=e.value,m2=g('machines',to);if(!t||!m2||to===t.m)return;var all=[t].concat(desc(t.id)),fromN=nm('machines',t.m);
@@ -144,6 +148,8 @@ document.addEventListener('dragstart',function(e){var r=e.target.closest&&e.targ
 document.addEventListener('dragover',function(e){if(!DR)return;var r=e.target.closest&&e.target.closest('tr[data-did]');if(r&&r.dataset.dc===DR.c)e.preventDefault()});
 document.addEventListener('drop',function(e){if(!DR)return;var r=e.target.closest&&e.target.closest('tr[data-did]');if(r&&r.dataset.dc===DR.c){e.preventDefault();moveTo(DR.c,DR.id,r.dataset.did)}DR=null});
 document.addEventListener('dragend',function(){DR=null});
+var UT=null;
+function showUndo(msg,gid){var o=$('undo');if(o)o.remove();clearTimeout(UT);var d=document.createElement('div');d.id='undo';d.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:8px;z-index:60;display:flex;gap:14px;align-items:center;font-size:14px;max-width:92vw;box-shadow:0 4px 14px rgba(0,0,0,.3)';d.innerHTML='<span>'+esc(msg)+'</span><button class="btn sm" data-a="undo" data-g="'+gid+'">تراجع</button>';document.body.appendChild(d);UT=setTimeout(function(){var q=$('undo');if(q)q.remove()},12000)}
 function moveTask(id,d,nv,foc){var x=g('tasks',id);if(!x||!x.pa)return false;var sb=kids(x.pa),i=sb.map(function(y){return y.id}).indexOf(id),y=sb[i+d];if(i<0||!y)return false;
  var cx=x.cr||0,cy=y.cr||0,nx,ny;if(cx!==cy){nx=cy;ny=cx}else{nx=cy+(d<0?-0.001:0.001);ny=cy}
  x.cr=nx;y.cr=ny;if(foc)FOCUS=id;

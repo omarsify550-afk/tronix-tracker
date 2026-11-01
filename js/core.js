@@ -1,12 +1,12 @@
 var ST={new:['لم يبدأ','s-new'],go:['جاري','s-go'],block:['معطّل','s-block'],rev:['بانتظار المراجعة','s-rev'],done:['تم','s-done']};
 var COL=['depts','emps','cats','machines','tasks','tpls','log','specs','groups','mstones','files'];
 var S={},V='dash',MID=null,TID=null,FOCUS=null,DL=1,F={st:'all',dp:''},D={dp:'',ms:[],open:0,st:'open'},X={},PC={bw:0,det:1,brk:1,or:0},ME='',PR,db=null,U=null,uid=null;
-COL.forEach(function(c){S[c]=[]});
+COL.forEach(function(c){S[c]=[]});var TR={tasks:[],machines:[]};
 try{var _p=JSON.parse(localStorage.getItem('tronix_pc')||'{}');PC.bw=_p.bw?1:0;PC.det=_p.det===0?0:1;PC.brk=_p.brk===0?0:1;PC.or=_p.or?1:0;ME=localStorage.getItem('tronix_me')||''}catch(e){}
 var PROF={},ROLE='local',SBM=false;
 var RL={admin:'مدير النظام',manager:'مدير مصنع / تخطيط',supervisor:'مشرف قسم',worker:'موظف',viewer:'مشاهدة فقط'},SUPV=',newt,pub,dcn,dt,dsub,ak,ap,fromgrp,cpt,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,mvt,mvi,';
 function can(a){if(ROLE==='admin'||ROLE==='manager'||ROLE==='local')return true;return ROLE==='supervisor'&&!!a&&SUPV.indexOf(','+a+',')>-1}
-var NEEDS=',newm,copym,editm,delm,restm,savetpl,newt,pub,dcn,dt,dsub,ak,ap,fromgrp,savegrp,cpt,newd,editd,newe,ede,newc,editc,newsp,editsp,editg,deltpl,mvup,mvdn,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,sbimp,sbexp,newms,editms,newp,editp,mse,msap,msapp,delf,arch1,ss,msman,mvm,mvt,mvi,';
+var NEEDS=',newm,copym,editm,delm,restm,savetpl,newt,pub,dcn,dt,dsub,ak,ap,fromgrp,savegrp,cpt,newd,editd,newe,ede,newc,editc,newsp,editsp,editg,deltpl,mvup,mvdn,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,sbimp,sbexp,newms,editms,newp,editp,mse,msap,msapp,delf,arch1,ss,msman,mvm,mvt,mvi,trr,trx,trclr,';
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function g(c,id){return S[c].filter(function(x){return x.id===id})[0]}
@@ -98,3 +98,17 @@ function msName(t){var m=g('machines',t.m),x=m&&(m.ms||[]).filter(function(z){re
 function setMs(m,fn){var a=JSON.parse(JSON.stringify(m.ms||[]));fn(a);return upd('machines',m.id,{ms:a})}
 function mtag(s){return s.st==='done'?'<span class="mtg t-done">تم</span>':s.st==='rev'?'<span class="mtg t-gate">بانتظار الاعتماد</span>':s.rag==='late'?'<span class="mtg t-late">متأخرة '+(-s.dd)+' يوم</span>':s.rag==='risk'?'<span class="mtg t-risk">خطر: '+s.dd+' يوم</span>':'<span class="mtg t-ok">في الميعاد</span>'}
 function msOpts(t){var m=g('machines',t.m);return '<option value="">—</option>'+((m&&m.ms)||[]).map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===t.ms?' selected':'')+'>'+esc(x.n)+'</option>'}).join('')}
+
+/* trash (soft delete): العنصر المحذوف بيتعلّم del=1 وبيتشال من S وبيروح TR لمدة 30 يوم */
+function gid0(){return 'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+function trashTasks(t){var all=[t].concat(desc(t.id)),gid=gid0(),now=Date.now();all.forEach(function(x,i){upd('tasks',x.id,{del:1,delt:now,delg:gid,delr:i?0:1,delu:uid||''})});showUndo('اتحذفت «'+t.d+'»'+(all.length>1?' و'+(all.length-1)+' فرعية':''),gid);return gid}
+function trashMachine(m){var all=S.tasks.filter(function(x){return x.m===m.id}),gid=gid0(),now=Date.now();all.forEach(function(x){upd('tasks',x.id,{del:1,delt:now,delg:gid,delr:0,delu:uid||''})});upd('machines',m.id,{del:1,delt:now,delg:gid,delr:1,delu:uid||''});showUndo('اتحذفت «'+m.n+'» مع '+all.length+' تاسك',gid);return gid}
+function trItems(gid){var o=[];['tasks','machines'].forEach(function(c){(TR[c]||[]).forEach(function(x){if(x.delg===gid)o.push({c:c,x:x})})});return o}
+function trGroups(){var gs={};['tasks','machines'].forEach(function(c){(TR[c]||[]).forEach(function(x){var k=x.delg||x.id,o=gs[k]=gs[k]||{g:k,items:[],t:0};o.items.push({c:c,x:x});if(x.delt)o.t=Math.max(o.t,x.delt)})});
+ return Object.keys(gs).map(function(k){var o=gs[k];o.root=o.items.filter(function(i){return i.x.delr})[0]||o.items[0];o.nt=o.items.filter(function(i){return i.c==='tasks'}).length;return o}).sort(function(a,b){return b.t-a.t})}
+function restoreGroup(gid){var its=trItems(gid);if(!its.length)return false;var hasM=its.some(function(i){return i.c==='machines'}),root=its.filter(function(i){return i.x.delr})[0]||its[0];
+ if(!hasM&&!g('machines',root.x.m)){toast('الماكينة نفسها محذوفة. استرجع الماكينة الأول');return false}
+ its.forEach(function(i){var o={del:0,delt:0,delg:'',delr:0,delu:''};if(i===root&&i.c==='tasks'&&i.x.pa&&!g('tasks',i.x.pa))o.pa='';upd(i.c,i.x.id,o)});
+ lg('استرجاع من السلة: '+(root.c==='machines'?root.x.n:root.x.d));toast('اتسترجعت');return true}
+async function trPurge(gid){var its=trItems(gid);for(var i=0;i<its.length;i++)await del(its[i].c,its[i].x.id)}
+async function purgeTrash(){if(!(ROLE==='admin'||ROLE==='manager'))return;var lim=Date.now()-30*864e5,cs=['tasks','machines'];for(var k=0;k<cs.length;k++){var a=(TR[cs[k]]||[]).filter(function(x){return x.delt&&x.delt<lim});for(var i=0;i<a.length;i++)await del(cs[k],a[i].id)}}
