@@ -59,9 +59,24 @@ var A={
  ai:function(e){var t=g('tasks',e.dataset.id),c=+e.dataset.c,v=($('ni'+c).value||'').trim();if(!v)return;var k=CL(t)[c].k,x=k==='c'?parseLines(v,'c')[0]:{n:v};if(k==='c'&&!/[×xX*]\s*\d+\s*$/.test(v))x.q=Math.max(1,parseInt(($('nq'+c)||{}).value)||1);FOCUS='ni'+c;mutCl(t,function(cl){cl[c].it.push(mkIt(x))},'أضاف بند: '+x.n)},
  nc:function(){var t=g('tasks',TID);modal('Checklist جديدة',[{k:'n',l:'الاسم',v:'Checklist'},{k:'k',l:'النوع',t:'select',o:[['s','مراحل / خطوات'],['c','مكونات (متوفر ← مركّب)']]}],function(v){if(!v.n.trim())return false;mutCl(t,function(cl){cl.push({n:v.n.trim(),k:v.k,it:[]})},'أضاف Checklist: '+v.n.trim())})},
  dcl:function(e){var t=g('tasks',e.dataset.id),c=+e.dataset.c;ask('حذف الـ Checklist «'+esc(CL(t)[c].n)+'» بكل بنودها؟',function(){mutCl(t,function(cl){cl.splice(c,1)},'حذف Checklist')})},
- savegrp:function(e){var t=g('tasks',e.dataset.id);modal('حفظ في مكتبة المجموعات',[{k:'n',l:'اسم المجموعة',v:t.d}],function(v){if(!v.n.trim())return false;var nd=nodeOf(t);nd.n=v.n.trim();add('groups',nd);lg('حفظ مجموعة: '+v.n)})},
- fromgrp:function(e){if(!S.groups.length){toast('المكتبة فاضية: احفظ مجموعة من أي تاسك');return}var mid=e.dataset.id;modal('إضافة مجموعة من المكتبة',[{k:'g',l:'المجموعة',t:'select',o:opts('groups')}],function(v){var x=g('groups',v.g);if(!x)return false;var nd=Object.assign({},x,{d:x.n}),ct=g('cats',x.cat),dp=x.dp||(ct?ct.dp:''),d=g('depts',dp);nd.dp=dp;nd.w=nd.w||(d&&d.head?d.head:'');mkTree(mid,[nd],'').then(function(){lg('إضافة مجموعة: '+x.n)})},{ok:'إضافة'})},
- editg:function(e){var x=g('groups',e.dataset.id);modal('تعديل المجموعة',[{k:'n',l:'الاسم',v:x.n}],function(v){if(!v.n.trim())return false;upd('groups',x.id,{n:v.n.trim()})},{del:function(){del('groups',x.id)}})},
+ savegrp:function(e){var t=g('tasks',e.dataset.id);modal('حفظ في مكتبة المجموعات',[{k:'n',l:'اسم المجموعة',v:t.d}].concat(secFields('')),function(v){if(!v.n.trim())return false;var nd=nodeOf(t);nd.n=v.n.trim();nd.sec=secVal(v);add('groups',nd);lg('حفظ مجموعة: '+v.n)})},
+ fromgrp:function(e){if(!S.groups.length){toast('المكتبة فاضية: احفظ مجموعة من أي تاسك');return}var mid=e.dataset.id,m=g('machines',mid),ss=gsecs(),have=function(x){return mt(mid).some(function(t){return t.d===x.n})};
+  modal('إضافة من المكتبة',[{k:'sec',l:'القسم',t:'select',o:[['','كل الأقسام']].concat(ss.map(function(s){return [s,s]})),v:(m&&ss.indexOf(m.typ)>-1)?m.typ:''},{k:'g',l:'المجموعات (علّم اللي هتضيفه)',t:'chk',o:[]}],function(v){
+   var ids=v.g||[];if(!ids.length){toast('علّم مجموعة واحدة على الأقل');return false}
+   var nds=[],nt=0,ni=0;S.groups.forEach(function(x){if(ids.indexOf(x.id)<0)return;var ct=g('cats',x.cat),dp=x.dp||(ct?ct.dp:''),d=g('depts',dp),nd=Object.assign({},x,{d:x.n});nd.dp=dp;nd.w=nd.w||(d&&d.head?d.head:'');nds.push(nd);nt+=gtasks(x);ni+=gitems(x)});
+   mkTree(mid,nds,'').then(function(){lg('إضافة من المكتبة: '+nds.length+' مجموعة');toast('اتضافت '+nds.length+' مجموعة ('+nt+' تاسك، '+ni+' عنصر)')})},
+   {ok:'إضافة',init:function(){var box=$('f_g'),sel=$('f_sec');
+    box.insertAdjacentHTML('beforebegin','<div style="margin:4px 0"><button type="button" class="btn ghost sm" id="gall">تحديد الكل</button> <button type="button" class="btn ghost sm" id="gnone">إلغاء الكل</button> <span class="mut" id="gcnt"></span></div>');
+    function cnt(){var ids=[].slice.call(box.querySelectorAll('input:checked')).map(function(c){return c.value}),nt=0,ni=0;S.groups.forEach(function(x){if(ids.indexOf(x.id)>-1){nt+=gtasks(x);ni+=gitems(x)}});$('gcnt').textContent='المحدد: '+ids.length+' مجموعة · '+nt+' تاسك · '+ni+' عنصر'}
+    function draw(){var s=sel.value,a=S.groups.filter(function(x){return !s||(x.sec||'')===s});
+     box.innerHTML=a.map(function(x){var dup=have(x);return '<label><input type="checkbox" value="'+esc(x.id)+'"'+(dup?'':' checked')+'> '+esc(x.n)+' <small>('+gtasks(x)+' تاسك · '+gitems(x)+' عنصر'+(!s&&x.sec?' · '+esc(x.sec):'')+')</small>'+(dup?' <b style="color:#b45309">موجودة بالفعل</b>':'')+'</label>'}).join('')||'<div class="mut">مفيش مجموعات في القسم ده</div>';cnt()}
+    sel.onchange=draw;box.onchange=cnt;
+    $('gall').onclick=function(){box.querySelectorAll('input').forEach(function(c){c.checked=true});cnt()};
+    $('gnone').onclick=function(){box.querySelectorAll('input').forEach(function(c){c.checked=false});cnt()};
+    draw()}})},
+ editg:function(e){var x=g('groups',e.dataset.id);modal('تعديل المجموعة',[{k:'n',l:'الاسم',v:x.n}].concat(secFields(x.sec)),function(v){if(!v.n.trim())return false;upd('groups',x.id,{n:v.n.trim(),sec:secVal(v)})},{del:function(){del('groups',x.id)}})},
+ rensec:function(e){var s=e.dataset.s;modal('إعادة تسمية القسم',[{k:'n',l:'الاسم الجديد (سيبه فاضي لفك القسم)',v:s}],function(v){var n=v.n.trim();S.groups.filter(function(x){return (x.sec||'')===s}).forEach(function(x){upd('groups',x.id,{sec:n})});lg('تسمية قسم مكتبة: '+s+' ← '+n)})},
+ tgls:function(e){var k='gs:'+e.dataset.s;X[k]=X[k]===false;render()},
  fst:function(e){F.st=e.dataset.v;render()},fdp:function(e){F.dp=e.value;render()},
  ddp:function(e){D.dp=e.value;render()},dst:function(e){D.st=e.value;render()},
  pcbrk:function(e){PC.brk=+e.value;svPC();render()},
@@ -151,6 +166,8 @@ document.addEventListener('dragstart',function(e){var r=e.target.closest&&e.targ
 document.addEventListener('dragover',function(e){if(!DR)return;var r=e.target.closest&&e.target.closest('tr[data-did]');if(r&&r.dataset.dc===DR.c)e.preventDefault()});
 document.addEventListener('drop',function(e){if(!DR)return;var r=e.target.closest&&e.target.closest('tr[data-did]');if(r&&r.dataset.dc===DR.c){e.preventDefault();moveTo(DR.c,DR.id,r.dataset.did)}DR=null});
 document.addEventListener('dragend',function(){DR=null});
+function secFields(cur){return [{k:'sec',l:'القسم في المكتبة (مثلًا: ماكينة ستاندر)',t:'select',o:[['','بدون قسم']].concat(gsecs().map(function(s){return [s,s]})),v:cur||''},{k:'sec2',l:'أو اكتب اسم قسم جديد'}]}
+function secVal(v){return (v.sec2||'').trim()||v.sec||''}
 var UT=null;
 function showUndo(msg,gid){var o=$('undo');if(o)o.remove();clearTimeout(UT);var d=document.createElement('div');d.id='undo';d.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:8px;z-index:60;display:flex;gap:14px;align-items:center;font-size:14px;max-width:92vw;box-shadow:0 4px 14px rgba(0,0,0,.3)';d.innerHTML='<span>'+esc(msg)+'</span><button class="btn sm" data-a="undo" data-g="'+gid+'">تراجع</button>';document.body.appendChild(d);UT=setTimeout(function(){var q=$('undo');if(q)q.remove()},12000)}
 function moveTask(id,d,nv,foc){var x=g('tasks',id);if(!x||!x.pa)return false;var sb=kids(x.pa),i=sb.map(function(y){return y.id}).indexOf(id),y=sb[i+d];if(i<0||!y)return false;

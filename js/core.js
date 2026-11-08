@@ -6,7 +6,7 @@ try{var _p=JSON.parse(localStorage.getItem('tronix_pc')||'{}');PC.bw=_p.bw?1:0;P
 var PROF={},ROLE='local',SBM=false;
 var RL={admin:'مدير النظام',manager:'مدير مصنع / تخطيط',supervisor:'مشرف قسم',worker:'موظف',viewer:'مشاهدة فقط'},SUPV=',newt,pub,dcn,dt,dsub,ak,ap,fromgrp,cpt,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,mvt,mvi,';
 function can(a){if(ROLE==='admin'||ROLE==='manager'||ROLE==='local')return true;return ROLE==='supervisor'&&!!a&&SUPV.indexOf(','+a+',')>-1}
-var NEEDS=',newm,copym,editm,delm,restm,savetpl,newt,pub,dcn,dt,dsub,ak,ap,fromgrp,savegrp,cpt,newd,editd,newe,ede,newc,editc,newsp,editsp,editg,deltpl,mvup,mvdn,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,sbimp,sbexp,newms,editms,newp,editp,mse,msap,msapp,delf,arch1,ss,msman,mvm,mvt,mvi,trr,trx,trclr,';
+var NEEDS=',newm,copym,editm,delm,restm,savetpl,newt,pub,dcn,dt,dsub,ak,ap,fromgrp,savegrp,cpt,newd,editd,newe,ede,newc,editc,newsp,editsp,editg,deltpl,mvup,mvdn,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,sbimp,sbexp,newms,editms,newp,editp,mse,msap,msapp,delf,arch1,ss,msman,mvm,mvt,mvi,trr,trx,trclr,rensec,';
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function g(c,id){return S[c].filter(function(x){return x.id===id})[0]}
@@ -33,7 +33,7 @@ function daysTo(x){return Math.round((pdate(x)-pdate(TODAY))/864e5)}
 function byCr(a,b){return (a.cr||0)-(b.cr||0)}
 function byO(a,b){var x=a.o==null?1e9:a.o,y=b.o==null?1e9:b.o;return (x-y)||((a.cr||0)-(b.cr||0))}
 function reidx(c,a){a.forEach(function(x,i){if(x.o!==i){var po=x.o==null?null:x.o;x.o=i;upd(c,x.id,{o:i},{o:po})}});S[c]=a;render()}
-function mv(c,id,d){if(!can()){toast('مفيش صلاحية لهذا الإجراء');return}var a=S[c].slice(),i=a.map(function(x){return x.id}).indexOf(id),j=i+d;if(i<0||j<0||j>=a.length)return;var x=a[i];a[i]=a[j];a[j]=x;reidx(c,a)}
+function mv(c,id,d){if(!can()){toast('مفيش صلاحية لهذا الإجراء');return}var a=S[c].slice(),i=a.map(function(x){return x.id}).indexOf(id),j=i+d;if(c==='groups'&&i>-1){var s0=a[i].sec||'';while(j>=0&&j<a.length&&(a[j].sec||'')!==s0)j+=d}if(i<0||j<0||j>=a.length)return;var x=a[i];a[i]=a[j];a[j]=x;reidx(c,a)}
 function moveTo(c,id,tid){if(!can()){toast('مفيش صلاحية لهذا الإجراء');return}var a=S[c].slice(),ids=a.map(function(x){return x.id}),i=ids.indexOf(id),j=ids.indexOf(tid);if(i<0||j<0||i===j)return;var x=a.splice(i,1)[0];a.splice(j,0,x);reidx(c,a)}
 var MST={new:'لم يتم البدء',go:'جاري',hold:'مؤجلة',ready:'جاهزة للتسليم',del:'تم التسليم'},MSTC={new:'s-new',go:'s-go',hold:'s-new',ready:'s-rev',del:'s-done'},PRI={h:'عالية',m:'متوسطة',l:'منخفضة'},MF='all';
 function mstat(m){return m.st||'go'}
@@ -119,3 +119,8 @@ function restoreGroup(gid){var its=trItems(gid);if(!its.length)return false;var 
  lg('استرجاع من السلة: '+(root.c==='machines'?root.x.n:root.x.d));toast('اتسترجعت');return true}
 async function trPurge(gid){var its=trItems(gid);for(var i=0;i<its.length;i++)await del(its[i].c,its[i].x.id)}
 async function purgeTrash(){if(!(ROLE==='admin'||ROLE==='manager'))return;var lim=Date.now()-30*864e5,cs=['tasks','machines'];UBUSY=1;try{for(var k=0;k<cs.length;k++){var a=(TR[cs[k]]||[]).filter(function(x){return x.delt&&x.delt<lim});for(var i=0;i<a.length;i++)await del(cs[k],a[i].id)}}finally{UBUSY=0}}
+/* library: أقسام المجموعات (حقل sec على المجموعة) */
+function gtasks(x){var n=1;(x.ch||[]).forEach(function(k){n+=gtasks(k)});return n}
+function gitems(x){var n=0;nodeCl(x).forEach(function(c){n+=c.it.length});(x.ch||[]).forEach(function(k){n+=gitems(k)});return n}
+function gsecs(){var a=[];S.groups.forEach(function(x){var s=x.sec||'';if(s&&a.indexOf(s)<0)a.push(s)});return a}
+
