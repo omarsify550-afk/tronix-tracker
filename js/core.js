@@ -1,7 +1,7 @@
 var ST={new:['لم يبدأ','s-new'],go:['جاري','s-go'],block:['معطّل','s-block'],rev:['بانتظار المراجعة','s-rev'],done:['تم','s-done']};
 var COL=['depts','emps','cats','machines','tasks','tpls','log','specs','groups','mstones','files'];
 var S={},V='dash',MID=null,TID=null,FOCUS=null,DL=1,F={st:'all',dp:''},D={dp:'',ms:[],open:0,st:'open'},X={},PC={bw:0,det:1,brk:1,or:0},ME='',PR,db=null,U=null,uid=null;
-COL.forEach(function(c){S[c]=[]});var TR={tasks:[],machines:[]};
+COL.forEach(function(c){S[c]=[]});var TR={tasks:[],machines:[]},UST=[],UG=0,UBUSY=0,ULB='';
 try{var _p=JSON.parse(localStorage.getItem('tronix_pc')||'{}');PC.bw=_p.bw?1:0;PC.det=_p.det===0?0:1;PC.brk=_p.brk===0?0:1;PC.or=_p.or?1:0;ME=localStorage.getItem('tronix_me')||''}catch(e){}
 var PROF={},ROLE='local',SBM=false;
 var RL={admin:'مدير النظام',manager:'مدير مصنع / تخطيط',supervisor:'مشرف قسم',worker:'موظف',viewer:'مشاهدة فقط'},SUPV=',newt,pub,dcn,dt,dsub,ak,ap,fromgrp,cpt,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,mvt,mvi,';
@@ -13,9 +13,16 @@ function g(c,id){return S[c].filter(function(x){return x.id===id})[0]}
 function nm(c,id){var x=g(c,id);return x?x.n:'-'}
 function dn(id){var d=g('depts',id);return d?d.n:'بدون قسم'}
 function toast(m){var t=$('toast');t.textContent=m;t.className='';setTimeout(function(){t.className='hide'},2800)}
-async function add(c,o){if(!db){toast('قاعدة البيانات غير متاحة');return null}try{return await db.collection(c).add(o)}catch(e){toast('مفيش صلاحية تعديل أو حصل خطأ');return null}}
-async function upd(c,id,o){if(!db)return;try{await db.doc(c+'/'+id).update(o)}catch(e){toast('مفيش صلاحية تعديل أو حصل خطأ')}}
-async function del(c,id){if(!db)return;try{await db.doc(c+'/'+id).delete()}catch(e){toast('مفيش صلاحية تعديل أو حصل خطأ')}}
+async function add(c,o,id){if(!db){toast('قاعدة البيانات غير متاحة');return null}var rec=!UBUSY&&c!=='log',g0=UG;try{var r=await db.collection(c).add(o,id);if(r&&rec)uPush({k:'add',c:c,id:r.id},g0);return r}catch(e){toast('مفيش صلاحية تعديل أو حصل خطأ');return null}}
+async function upd(c,id,o,pv){if(!db)return;var en=null;if(!UBUSY&&c!=='log'){var d0=doc0(c,id),p=pv||null;if(!p&&d0){p={};Object.keys(o).forEach(function(k){p[k]=(k in d0&&d0[k]!==undefined)?JSON.parse(JSON.stringify(d0[k])):null})}if(p)en=uPush({k:'upd',c:c,id:id,p:p})}try{await db.doc(c+'/'+id).update(o)}catch(e){uDrop(en);toast('مفيش صلاحية تعديل أو حصل خطأ')}}
+async function del(c,id){if(!db)return;var en=null;if(!UBUSY&&c!=='log'){var d0=doc0(c,id);if(d0){var dd=JSON.parse(JSON.stringify(d0));delete dd.id;en=uPush({k:'del',c:c,id:id,data:dd})}}try{await db.doc(c+'/'+id).delete()}catch(e){uDrop(en);toast('مفيش صلاحية تعديل أو حصل خطأ')}}
+/* تراجع Ctrl+Z: كل upd/add/del بيتسجل ويتجمّع حسب الحدث (ضغطة/كيبورد/تغيير) */
+function doc0(c,id){return g(c,id)||((TR[c]||[]).filter(function(x){return x.id===id})[0])}
+function uPush(e,g0){e.g=g0==null?UG:g0;e.lb=ULB;ULB='';UST.push(e);if(UST.length>300)UST.shift();return e}
+function uDrop(e){var i=e?UST.indexOf(e):-1;if(i>-1)UST.splice(i,1)}
+async function undoLast(){if(!UST.length){toast('مفيش حاجة تتراجع');return}var gg=UST[UST.length-1].g,grp=[];while(UST.length&&UST[UST.length-1].g===gg)grp.push(UST.pop());UBUSY=1;
+ try{for(var i=0;i<grp.length;i++){var e=grp[i];if(e.k==='upd')await upd(e.c,e.id,e.p);else if(e.k==='add')await del(e.c,e.id);else await add(e.c,e.data,e.id)}}finally{UBUSY=0}
+ var lb=grp.map(function(e){return e.lb}).filter(Boolean)[0];toast('اتراجع عن آخر أمر'+(lb?': '+lb:'')+(grp.length>1?' ('+grp.length+' تعديل)':''))}
 function lg(m){add('log',{t:Date.now(),m:m,u:uid||''})}
 function dstr(ms){var d=new Date(ms);return d.getDate()+'/'+(d.getMonth()+1)+' '+d.getHours()+':'+('0'+d.getMinutes()).slice(-2)}
 function ymd(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
@@ -25,7 +32,7 @@ function pdate(x){var q=x.split('-');return new Date(+q[0],q[1]-1,+q[2])}
 function daysTo(x){return Math.round((pdate(x)-pdate(TODAY))/864e5)}
 function byCr(a,b){return (a.cr||0)-(b.cr||0)}
 function byO(a,b){var x=a.o==null?1e9:a.o,y=b.o==null?1e9:b.o;return (x-y)||((a.cr||0)-(b.cr||0))}
-function reidx(c,a){a.forEach(function(x,i){if(x.o!==i){x.o=i;upd(c,x.id,{o:i})}});S[c]=a;render()}
+function reidx(c,a){a.forEach(function(x,i){if(x.o!==i){var po=x.o==null?null:x.o;x.o=i;upd(c,x.id,{o:i},{o:po})}});S[c]=a;render()}
 function mv(c,id,d){if(!can()){toast('مفيش صلاحية لهذا الإجراء');return}var a=S[c].slice(),i=a.map(function(x){return x.id}).indexOf(id),j=i+d;if(i<0||j<0||j>=a.length)return;var x=a[i];a[i]=a[j];a[j]=x;reidx(c,a)}
 function moveTo(c,id,tid){if(!can()){toast('مفيش صلاحية لهذا الإجراء');return}var a=S[c].slice(),ids=a.map(function(x){return x.id}),i=ids.indexOf(id),j=ids.indexOf(tid);if(i<0||j<0||i===j)return;var x=a.splice(i,1)[0];a.splice(j,0,x);reidx(c,a)}
 var MST={new:'لم يتم البدء',go:'جاري',hold:'مؤجلة',ready:'جاهزة للتسليم',del:'تم التسليم'},MSTC={new:'s-new',go:'s-go',hold:'s-new',ready:'s-rev',del:'s-done'},PRI={h:'عالية',m:'متوسطة',l:'منخفضة'},MF='all';
@@ -66,7 +73,7 @@ function parseLines(txt,k){return txt.split('\n').map(function(l){return l.trim(
 function mkIt(x){return {n:x.n,q:x.q||1,av:0,dn:0,r:'',im:0,pb:'',pbt:0,cr:Date.now()}}
 function cloneCl(t){return JSON.parse(JSON.stringify(CL(t)))}
 function who(u){var e=S.emps.filter(function(x){return u&&x.uid===u})[0];return e?e.n:(PROF[u]||'')}
-function tupd(t,o,msg){var mm=g('machines',t.m);if(mm&&mm.st==='new'&&!t.dr&&(o.s||o.cl||o.dn))upd('machines',mm.id,{st:'go'});if(!Array.isArray(t.cl)&&!('cl' in o)){o.cl=CL(t);o.it=[]}if(msg)o.hs=[{t:Date.now(),u:uid||'',m:msg}].concat(t.hs||[]).slice(0,40);return upd('tasks',t.id,o)}
+function tupd(t,o,msg){var mm=g('machines',t.m);if(mm&&mm.st==='new'&&!t.dr&&(o.s||o.cl||o.dn))upd('machines',mm.id,{st:'go'});if(!Array.isArray(t.cl)&&!('cl' in o)){o.cl=CL(t);o.it=[]}if(msg)o.hs=[{t:Date.now(),u:uid||'',m:msg}].concat(t.hs||[]).slice(0,40);ULB=msg||'';return upd('tasks',t.id,o)}
 function mutCl(t,fn,msg){var c=cloneCl(t);fn(c);return tupd(t,{cl:c,it:[]},msg)}
 function desc(id){var o=[];kids(id).forEach(function(k){o.push(k);o=o.concat(desc(k.id))});return o}
 function roots(mid){var a=mt(mid),ids={};a.forEach(function(t){ids[t.id]=1});return a.filter(function(t){return !t.pa||!ids[t.pa]}).sort(byCr)}
@@ -111,4 +118,4 @@ function restoreGroup(gid){var its=trItems(gid);if(!its.length)return false;var 
  its.forEach(function(i){var o={del:0,delt:0,delg:'',delr:0,delu:''};if(i===root&&i.c==='tasks'&&i.x.pa&&!g('tasks',i.x.pa))o.pa='';upd(i.c,i.x.id,o)});
  lg('استرجاع من السلة: '+(root.c==='machines'?root.x.n:root.x.d));toast('اتسترجعت');return true}
 async function trPurge(gid){var its=trItems(gid);for(var i=0;i<its.length;i++)await del(its[i].c,its[i].x.id)}
-async function purgeTrash(){if(!(ROLE==='admin'||ROLE==='manager'))return;var lim=Date.now()-30*864e5,cs=['tasks','machines'];for(var k=0;k<cs.length;k++){var a=(TR[cs[k]]||[]).filter(function(x){return x.delt&&x.delt<lim});for(var i=0;i<a.length;i++)await del(cs[k],a[i].id)}}
+async function purgeTrash(){if(!(ROLE==='admin'||ROLE==='manager'))return;var lim=Date.now()-30*864e5,cs=['tasks','machines'];UBUSY=1;try{for(var k=0;k<cs.length;k++){var a=(TR[cs[k]]||[]).filter(function(x){return x.delt&&x.delt<lim});for(var i=0;i<a.length;i++)await del(cs[k],a[i].id)}}finally{UBUSY=0}}
