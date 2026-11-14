@@ -119,7 +119,20 @@ var A={
  bknow:async function(){var r=await SB.rpc('nw_backup_now');if(r.error){toast('تعذّر أخد النسخة: '+(r.error.message||''));return}toast('اتاخدت نسخة احتياطية');await loadBk()},
  bkdl:async function(e){try{var d=await bkGet(e.dataset.id),b=new Blob([JSON.stringify(d.data)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tronix-server-backup-'+ymd(new Date(d.taken_at))+'.json';a.click()}catch(x){toast('تعذّر تنزيل النسخة')}},
  bkrs:function(e){var id=e.dataset.id,b=(BK||[]).filter(function(x){return String(x.id)===String(id)})[0];ask('استرجاع نسخة '+(b?dstr(new Date(b.taken_at).getTime()):'')+'؟ هتتاخد نسخة من الحالة الحالية الأول، وبعدها محتوى النسخة بيتكتب فوق البيانات (بيرجّع المحذوف والمعدّل، ومش بيمسح اللي اتعمل بعدها).',async function(){try{var q=await SB.rpc('nw_backup_now');if(q.error)throw q.error;var d=await bkGet(id),n=await bkImport(d.data);await loadBk();toast('اتسترجعت النسخة ('+n+' عنصر)')}catch(x){toast('فشل الاسترجاع: '+(x.message||''))}})},
- hrep:function(e){var m=g('machines',e.dataset.id),l=itList();modal('تقرير تسليم «'+m.n+'»',[{k:'tp',l:'قالب الفحص (بنود الميكانيكا والكهرباء والمستلزمات)',t:'select',o:l.map(function(t){return [t.id,t.n]}),v:itFor(m).id}],function(v){var tp=l.filter(function(t){return t.id===v.tp})[0]||l[0];printDoc(handoverDoc(m,tp),pname(m.n,'تقرير تسليم'));lg('طباعة تقرير تسليم: '+m.n)},{ok:'طباعة التقرير'})},
+ hrep:function(e){var m=g('machines',e.dataset.id),l=itList(),t0=itFor(m),jn=function(a){return (a||[]).join('\n')},K=['mech','elec','chas','acc','ser','rd','sg'],
+  sp0=specRows(m).filter(function(x){return x[0]!=='تاريخ التسليم'}).map(function(x){return x[0]+' | '+(x[1]||'')}).join('\n');
+  modal('تقرير تسليم «'+m.n+'»',[{k:'tp',l:'قالب الفحص (لو غيّرته البنود اللي تحت بتتبدّل)',t:'select',o:l.map(function(t){return [t.id,t.n]}),v:t0.id},
+   {k:'an',l:'ملحق الناقص التفصيلي (بعد التوقيعات)',t:'select',o:[['','بدون ملحق (ملخص بالأقسام فقط)'],['all','كل الأقسام']].concat(S.depts.map(function(d){return [d.id,'قسم '+d.n+' فقط']}))},
+   {k:'sp',l:'المواصفات (سطر لكل بند: الاسم | القيمة). احذف أو أضف أو عدّل',t:'textarea',v:sp0},
+   {k:'mech',l:'بنود اختبار الميكانيكا',t:'textarea',v:jn(t0.mech)},{k:'elec',l:'بنود اختبار الكهرباء',t:'textarea',v:jn(t0.elec)},{k:'chas',l:'بنود حالة الشاسيه',t:'textarea',v:jn(t0.chas)},
+   {k:'acc',l:'مستلزمات التركيب (الكمية بعد × لو معروفة)',t:'textarea',v:jn(t0.acc)},{k:'ser',l:'المكونات الرئيسية للأرقام التسلسلية',t:'textarea',v:jn(t0.ser)},
+   {k:'rd',l:'قراءات التشغيل التجريبي',t:'textarea',v:jn(t0.rd)},{k:'sg',l:'التوقيعات (الأدوار)',t:'textarea',v:jn(t0.sg)},
+   {k:'sv',l:'حفظ التعديلات دي في القالب؟',t:'select',o:[['0','لا، للتقرير ده بس'],['1','نعم، احفظها في القالب']]}],
+   function(v){var tp=l.filter(function(t){return t.id===v.tp})[0]||l[0],ed={n:tp.n};K.forEach(function(k){ed[k]=itLines(v[k])});
+    var sp=itLines(v.sp).map(function(x){var q=x.indexOf('|');return q<0?[x,'']:[x.slice(0,q).trim(),x.slice(q+1).trim()]});
+    if(v.sv==='1'){if(g('itpls',tp.id))upd('itpls',tp.id,ed);else{DEFIT.forEach(function(d,i){var o=JSON.parse(JSON.stringify(d));if(d.id===tp.id)Object.assign(o,ed);delete o.id;o.cr=Date.now()+i;add('itpls',o)})}}
+    printDoc(handoverDoc(m,ed,{sp:sp,an:v.an}),pname(m.n,'تقرير تسليم'));lg('طباعة تقرير تسليم: '+m.n)},
+   {ok:'طباعة التقرير',init:function(){$('f_tp').onchange=function(){var t=l.filter(function(x){return x.id===this.value})[0];if(t)K.forEach(function(k){$('f_'+k).value=jn(t[k])})}}})},
  itpb:function(e){var tp=itList().filter(function(t){return t.id===e.dataset.id})[0];if(tp)printDoc(handoverDoc(null,tp),pname('نموذج تسليم فاضي',tp.n))},
  itdef:function(){if(S.itpls.length)return;DEFIT.forEach(function(x,i){var o=JSON.parse(JSON.stringify(x));delete o.id;o.cr=Date.now()+i;add('itpls',o)});lg('إنشاء قوالب فحص التسليم الافتراضية')},
  newit:function(){modal('قالب فحص جديد',fIt({}),function(v){var o=itVal(v);if(!o.n){toast('اكتب اسم القالب');return false}o.cr=Date.now();add('itpls',o);lg('قالب فحص: '+o.n)})},
