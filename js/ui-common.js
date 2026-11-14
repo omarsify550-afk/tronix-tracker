@@ -84,3 +84,39 @@ function xlsxBook(kind){var X=window.XLSX;if(!X){toast('مكتبة Excel مش م
  wb.Workbook={Views:[{RTL:true}]};X.writeFile(wb,'tronix-tracker-'+(kind==='late'?'late-':'')+TODAY+'.xlsx')}
 function withKids(own,ok){var seen={},ex=[];own.forEach(function(t){seen[t.id]=1});own.forEach(function(t){desc(t.id).forEach(function(k){if(!seen[k.id]&&ok(k)){seen[k.id]=1;ex.push(k)}})});return own.concat(ex)}
 function tord(a){var ids={},o=[];a.forEach(function(t){ids[t.id]=1});function add(t){o.push(t);a.filter(function(k){return k.pa===t.id}).sort(byCr).forEach(add)}a.filter(function(t){return !t.pa||!ids[t.pa]}).sort(byCr).forEach(add);return o}
+
+/* تقرير تسليم الماكينة (للطباعة وتتملي يدوي) */
+var HC='☐';
+function hrRes(){return HC+' سليم &nbsp; '+HC+' ملاحظة &nbsp; '+HC+' لا ينطبق'}
+function hrWho(){return '<div style="margin:2px 0 10px;font-size:11px">الفاحص: ______________________ &nbsp;&nbsp; التاريخ: ____ / ____ / ________</div>'}
+function hrTest(title,items){var a=(items||[]).concat(['','']);return '<div class="sec">'+title+'</div><table><tr><th style="width:26px">م</th><th>البند</th><th style="width:150px">النتيجة</th><th style="width:28%">ملاحظات</th></tr>'+a.map(function(x,i){return '<tr style="height:8mm"><td class="nw">'+(i+1)+'</td><td>'+esc(x)+'</td><td class="nw">'+hrRes()+'</td><td></td></tr>'}).join('')+'</table>'+hrWho()}
+function hrAcc(l){var m=String(l).match(/^(.*?)\s*[×xX*]\s*(\d+)\s*$/);return m?[m[1],m[2]]:[l,'']}
+function hrSpecs(m){var r=m?specRows(m).filter(function(x){return x[0]!=='تاريخ التسليم'}):[['النوع'],['القدرة'],['الأبعاد'],['سنة التصنيع']].concat(specs().map(function(x){return [x.n]}));
+ return '<div class="sec">1) مطابقة المواصفات</div><table><tr><th>البند</th><th style="width:27%">المطلوب (من النظام)</th><th style="width:150px">التأكيد</th><th style="width:26%">المركّب فعليًا (لو مختلف)</th></tr>'+r.map(function(x){return '<tr style="height:8mm"><td>'+esc(x[0])+'</td><td><b>'+esc(x[1]||'')+'</b></td><td class="nw">'+HC+' مطابق &nbsp; '+HC+' مختلف</td><td></td></tr>'}).join('')+'</table>'}
+function hrInfo(m){var f=['الرقم التسلسلي للماكينة','اسم العميل','موقع التركيب','تاريخ التسليم الفعلي','اسم المستلم'];
+ return '<div class="sec">بيانات التسليم</div><table>'+f.map(function(x){return '<tr style="height:8mm"><th style="width:32%;text-align:start">'+x+'</th><td></td></tr>'}).join('')+'</table>'}
+function hrChassis(){var rows=['سلامة اللحام والتجميع','حالة الدهان (خدوش - صدأ - تقشير)','استواء الشاسيه وضبط الميزان','الأرجل وقواعد الضبط','الأبواب والأغطية والغلاقات','ملصقات التحذير ولوحة بيانات الماكينة'];return rows}
+function hrOpen(m){var all=mt(m.id),a=all.filter(function(t){return ts(t)!=='done'}),u=UA(a).filter(function(x){return !x.d}),ms=mscalc(m),st={done:'تمت',rev:'بانتظار الاعتماد',go:'جارية',new:'لم تبدأ'};
+ var h='<div class="sec">8) حالة الماكينة في النظام والناقص المفتوح <small style="font-weight:400">(لقطة وقت الطباعة: '+dstr(Date.now())+')</small></div><div class="kc"><div><small>نسبة الإنجاز</small><b>'+pct(all)+'%</b></div><div><small>العناصر الناقصة</small><b>'+u.length+'</b></div><div><small>المتأخر</small><b>'+u.filter(lateU).length+'</b></div><div><small>المراحل المكتملة</small><b>'+ms.filter(function(s){return s.st==='done'}).length+' / '+ms.length+'</b></div></div>';
+ if(ms.length)h+='<table><tr><th>المرحلة</th><th style="width:90px">تمت / الكل</th><th style="width:110px">الحالة</th></tr>'+ms.map(function(s){return '<tr><td>'+esc(s.x.n)+'</td><td class="nw">'+s.d+' / '+s.n+'</td><td>'+(st[s.st]||'')+'</td></tr>'}).join('')+'</table>';
+ h+='<table><tr><th style="width:90px">القسم</th><th>التاسك / العنصر الناقص</th><th style="width:90px">المسؤول</th><th style="width:70px">الاستحقاق</th><th style="width:105px">قبل الخروج</th></tr>'
+  +(u.length?u.map(function(x){return '<tr style="height:7mm"><td>'+esc(dn(x.t.dp))+'</td><td>'+tnm(x.t)+(x.i?' — '+esc(x.i.n):'')+'</td><td>'+esc(nm('emps',x.r))+'</td><td class="nw">'+esc(x.due||'')+'</td><td class="nw">'+HC+' اتنفذ</td></tr>'}).join(''):'<tr><td colspan="5" style="text-align:center">لا يوجد ناقص ✓</td></tr>')+'</table>';
+ return h}
+function handoverDoc(m,tp){var sub=(m?esc(m.n):'نموذج فاضي')+' — قالب الفحص: '+esc(tp.n),no='TR-'+ymd(new Date()).replace(/-/g,'')+'-'+(m?String(m.n).replace(/\s+/g,'').slice(0,12):'blank'),
+ boxes=[['الماكينة',m?esc(m.n):'—'],['النوع / الموديل',m?esc(m.typ||'-'):'—'],['تاريخ التسليم المخطط',m?esc(m.dl||'-'):'—'],['رقم التقرير',esc(no)]];
+ var ch=(tp.chas||[]).concat(['','']);
+ var p1=pg('تقرير تسليم ماكينة',sub,boxes,hrInfo(m)+hrSpecs(m));
+ var p2=pg('اختبارات الميكانيكا والكهرباء',sub,null,hrTest('2) اختبار الميكانيكا',tp.mech)+hrTest('3) اختبار الكهرباء',tp.elec));
+ var chT='<div class="sec">4) حالة الشاسيه</div><table><tr><th style="width:26px">م</th><th>البند</th><th style="width:150px">النتيجة</th><th style="width:28%">ملاحظات</th></tr>'+ch.map(function(x,i){return '<tr style="height:8mm"><td class="nw">'+(i+1)+'</td><td>'+esc(x)+'</td><td class="nw">'+hrRes()+'</td><td></td></tr>'}).join('')+'</table>'
+  +'<div style="display:flex;gap:8px;margin:4px 0 4px"><div style="flex:1;border:1px solid var(--ln);border-radius:6px;height:42mm;padding:4px;font-size:10px;color:var(--mt)">منظر علوي: علّم أماكن الخدوش أو العيوب</div><div style="flex:1;border:1px solid var(--ln);border-radius:6px;height:42mm;padding:4px;font-size:10px;color:var(--mt)">منظر جانبي: علّم أماكن الخدوش أو العيوب</div></div>'+hrWho();
+ var ac=(tp.acc||[]).map(hrAcc).concat([['',''],['','']]);
+ var acT='<div class="sec">5) مستلزمات التركيب اللي بتخرج مع الماكينة</div><table><tr><th style="width:26px">م</th><th>المستلزم</th><th style="width:60px">الكمية</th><th style="width:75px">اتسلّم</th><th style="width:28%">ملاحظات</th></tr>'+ac.map(function(x,i){return '<tr style="height:8mm"><td class="nw">'+(i+1)+'</td><td>'+esc(x[0])+'</td><td class="nw" style="text-align:center">'+esc(x[1])+'</td><td class="nw">'+HC+' تم</td><td></td></tr>'}).join('')+'</table>';
+ var p3=pg('حالة الشاسيه ومستلزمات التركيب',sub,null,chT+acT);
+ var sr=(tp.ser||[]).concat(['','']),rd=(tp.rd||[]).concat(['','']);
+ var p4=pg('الأرقام التسلسلية وقراءات التشغيل',sub,null,'<div class="sec">6) الأرقام التسلسلية للمكونات الرئيسية</div><table><tr><th style="width:26px">م</th><th style="width:32%">المكوّن</th><th>الموديل / الماركة</th><th style="width:34%">الرقم التسلسلي</th></tr>'+sr.map(function(x,i){return '<tr style="height:8mm"><td class="nw">'+(i+1)+'</td><td>'+esc(x)+'</td><td></td><td></td></tr>'}).join('')+'</table>'
+  +'<div class="sec">7) قراءات التشغيل التجريبي</div><table><tr><th style="width:26px">م</th><th style="width:45%">القراءة</th><th>القيمة المقاسة</th></tr>'+rd.map(function(x,i){return '<tr style="height:8mm"><td class="nw">'+(i+1)+'</td><td>'+esc(x)+'</td><td></td></tr>'}).join('')+'</table>');
+ var sg=(tp.sg&&tp.sg.length?tp.sg:['فاحص الميكانيكا','فاحص الكهرباء','مراقب الجودة','مدير الإنتاج','المستلم']);
+ var p5=pg('الحالة عند الخروج والاعتماد',sub,null,(m?hrOpen(m):'')
+  +'<div class="sec">'+(m?'9':'8')+') حالة الخروج</div><div style="font-size:13px;margin:4px 0 8px">'+HC+' جاهزة بالكامل &nbsp;&nbsp;&nbsp; '+HC+' تسليم بنواقص متفق عليها &nbsp;&nbsp;&nbsp; '+HC+' مؤجلة</div><div style="font-size:11px;margin-bottom:3px">ملاحظات عامة:</div><div class="lines" style="height:28mm"></div>'
+  +'<div class="sec">'+(m?'10':'9')+') التوقيعات والاعتماد</div><table><tr><th style="width:26%">الدور</th><th>الاسم</th><th style="width:28%">التوقيع</th><th style="width:16%">التاريخ</th></tr>'+sg.map(function(x){return '<tr style="height:11mm"><td><b>'+esc(x)+'</b></td><td></td><td></td><td></td></tr>'}).join('')+'</table>','&nbsp;');
+ return p1+p2+p3+p4+p5}

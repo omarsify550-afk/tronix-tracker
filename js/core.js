@@ -1,12 +1,12 @@
 var ST={new:['لم يبدأ','s-new'],go:['جاري','s-go'],block:['معطّل','s-block'],rev:['بانتظار المراجعة','s-rev'],done:['تم','s-done']};
-var COL=['depts','emps','cats','machines','tasks','tpls','log','specs','groups','mstones','files'];
+var COL=['depts','emps','cats','machines','tasks','tpls','log','specs','groups','mstones','files','itpls'];
 var S={},V='dash',MID=null,TID=null,FOCUS=null,DL=1,F={st:'all',dp:''},D={dp:'',ms:[],open:0,st:'open'},X={},PC={bw:0,det:1,brk:1,or:0},ME='',PR,db=null,U=null,uid=null;
 COL.forEach(function(c){S[c]=[]});var TR={tasks:[],machines:[]},UST=[],UG=0,UBUSY=0,ULB='';
 try{var _p=JSON.parse(localStorage.getItem('tronix_pc')||'{}');PC.bw=_p.bw?1:0;PC.det=_p.det===0?0:1;PC.brk=_p.brk===0?0:1;PC.or=_p.or?1:0;ME=localStorage.getItem('tronix_me')||''}catch(e){}
 var PROF={},ROLE='local',SBM=false;
 var RL={admin:'مدير النظام',manager:'مدير مصنع / تخطيط',supervisor:'مشرف قسم',worker:'موظف',viewer:'مشاهدة فقط'},SUPV=',newt,pub,dcn,dt,dsub,ak,ap,fromgrp,cpt,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,mvt,mvi,';
 function can(a){if(ROLE==='admin'||ROLE==='manager'||ROLE==='local')return true;return ROLE==='supervisor'&&!!a&&SUPV.indexOf(','+a+',')>-1}
-var NEEDS=',newm,copym,editm,delm,restm,savetpl,newt,pub,dcn,dt,dsub,ak,ap,fromgrp,savegrp,cpt,newd,editd,newe,ede,newc,editc,newsp,editsp,editg,deltpl,mvup,mvdn,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,sbimp,sbexp,newms,editms,newp,editp,mse,msap,msapp,delf,arch1,ss,msman,mvm,mvt,mvi,trr,trx,trclr,rensec,bknow,bkdl,bkrs,';
+var NEEDS=',newm,copym,editm,delm,restm,savetpl,newt,pub,dcn,dt,dsub,ak,ap,fromgrp,savegrp,cpt,newd,editd,newe,ede,newc,editc,newsp,editsp,editg,deltpl,mvup,mvdn,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,sbimp,sbexp,newms,editms,newp,editp,mse,msap,msapp,delf,arch1,ss,msman,mvm,mvt,mvi,trr,trx,trclr,rensec,bknow,bkdl,bkrs,newit,editit,itdef,';
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function g(c,id){return S[c].filter(function(x){return x.id===id})[0]}
@@ -124,3 +124,23 @@ function gtasks(x){var n=1;(x.ch||[]).forEach(function(k){n+=gtasks(k)});return 
 function gitems(x){var n=0;nodeCl(x).forEach(function(c){n+=c.it.length});(x.ch||[]).forEach(function(k){n+=gitems(k)});return n}
 function gsecs(){var a=[];S.groups.forEach(function(x){var s=x.sec||'';if(s&&a.indexOf(s)<0)a.push(s)});return a}
 
+/* قوالب فحص تقرير تسليم الماكينة (بتتعدّل من الإعدادات). دي القوالب الافتراضية لحد ما تتنشأ في الإعدادات */
+var DEFIT=[
+ {id:'d0',n:'فايبر ليزر',kw:'فايبر,ليزر,fiber,laser',
+  mech:['حركة المحور X بدون اهتزاز أو صوت غير طبيعي','حركة المحور Y بدون اهتزاز أو صوت غير طبيعي','حركة المحور Z ورأس القطع','تشحيم الأدلة الخطية والجنازير','شد السيور / الجنازير والتروس','تحاذي الكوبري وتعامد المحاور','استواء طاولة القطع','تركيب الرأس والعدسة والفوهة وتحاذي الشعاع','تثبيت المصدات ونهايات المشوار','خطوط الهواء والغاز (تسريب - وصلات - ضغط)','عمل الشفط والفلاتر','تثبيت مجاري الكابلات (الكابل تراك)'],
+  elec:['توصيلات لوحة الكهرباء وترقيم الأسلاك والتأريض','القواطع وحماية التسريب ومفتاح الطوارئ','الدرايفرات والمحركات واتجاه الدوران','مفاتيح نهايات المشوار وحساسات الهوم','حساس الارتفاع ومعايرته','الكنترولر والشاشة وإعدادات الماكينة','مصدر الليزر: التشغيل وقدرة الخرج','التشيللر: التشغيل والتنبيهات ودرجة الحرارة','صمام الغاز المساعد وتشغيله','مروحة الشفط وتشغيلها','الإضاءة وأجهزة التحذير والأبواب الواقية'],
+  chas:['سلامة اللحام والتجميع','حالة الدهان (خدوش - صدأ - تقشير)','استواء الشاسيه وضبط الميزان','الأرجل وقواعد الضبط','الأبواب والأغطية والغلاقات','ملصقات التحذير ولوحة بيانات الماكينة'],
+  acc:['عدسات حماية احتياطية','فوهات قطع احتياطية','مفاتيح الصيانة (Allen وغيره)','كابلات وتوصيلات التركيب','خراطيم الهواء والغاز ووصلاتها','وحدة تحكم يدوية (ريموت)','كتالوج التشغيل ودليل الصيانة','شهادة الضمان','برنامج التشغيل ومفتاحه (USB)','مشابك وأدوات تثبيت الألواح','فلاتر احتياطية','أرجل / قواعد الضبط'],
+  ser:['مصدر الليزر','رأس القطع','الكنترولر','درايفر المحور X','درايفر المحور Y','درايفر المحور Z','المحركات','التشيللر'],
+  rd:['الجهد (V)','التيار (A)','ضغط الهواء (bar)','ضغط الغاز المساعد (bar)','قدرة الليزر المقاسة (W)','درجة حرارة المياه (°C)','سرعة القطع التجريبية (م/د)','سُمك وخامة قطعة التجربة'],
+  sg:['فاحص الميكانيكا','فاحص الكهرباء','مراقب الجودة','مدير الإنتاج','المستلم']},
+ {id:'d1',n:'CNC',kw:'cnc,راوتر,router,بلازما,plasma',
+  mech:['حركة المحاور X/Y/Z بدون اهتزاز أو صوت غير طبيعي','تشحيم الأدلة والجنازير والمسامير اللولبية','شد السيور / الجنازير والتروس','تعامد المحاور واستواء الطاولة','تثبيت السبندل أو الشعلة','نظام تثبيت الخامة (فاكيوم / مشابك)','خطوط الهواء والشفط','تثبيت المصدات ونهايات المشوار','تثبيت مجاري الكابلات'],
+  elec:['لوحة الكهرباء والتأريض وترقيم الأسلاك','القواطع ومفتاح الطوارئ','الدرايفرات والمحركات واتجاه الدوران','مفاتيح نهايات المشوار وحساسات الهوم','الكنترولر والشاشة وإعدادات الماكينة','السبندل / مصدر البلازما: التشغيل','الإنفرتر (VFD) وإعداداته','حساس الارتفاع / THC','مروحة الشفط وتشغيلها'],
+  chas:['سلامة اللحام والتجميع','حالة الدهان (خدوش - صدأ - تقشير)','استواء الشاسيه وضبط الميزان','الأرجل وقواعد الضبط','الأبواب والأغطية','ملصقات التحذير ولوحة بيانات الماكينة'],
+  acc:['كابلات وتوصيلات التركيب','مفاتيح الصيانة','وحدة تحكم يدوية (ريموت)','كتالوج التشغيل ودليل الصيانة','شهادة الضمان','برنامج التشغيل ومفتاحه','قطع احتياطية (حسب التعاقد)','أرجل / قواعد الضبط'],
+  ser:['الكنترولر','السبندل / مصدر البلازما','الإنفرتر','درايفر المحور X','درايفر المحور Y','درايفر المحور Z','المحركات'],
+  rd:['الجهد (V)','التيار (A)','ضغط الهواء (bar)','سرعة الدوران (RPM)','سرعة القطع التجريبية','خامة وسُمك قطعة التجربة'],
+  sg:['فاحص الميكانيكا','فاحص الكهرباء','مراقب الجودة','مدير الإنتاج','المستلم']}];
+function itList(){return S.itpls.length?S.itpls:DEFIT}
+function itFor(m){var l=itList(),h=((m.typ||'')+' '+(m.n||'')).toLowerCase();return l.filter(function(t){return (t.kw||'').split(/[,،]/).some(function(k){k=k.trim().toLowerCase();return k&&h.indexOf(k)>-1})})[0]||l[0]}
