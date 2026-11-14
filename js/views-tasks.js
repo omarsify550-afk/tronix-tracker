@@ -55,7 +55,7 @@ function vSet(){
  +'<div><h3 class="sh">الموظفين <button class="btn sm" data-a="newe">+ إضافة</button> <button class="btn ghost sm" data-a="pemps">طباعة الموظفين بالأقسام</button></h3>'+list('emps',function(e){return '<b>'+esc(e.n)+'</b> <small>'+esc(nm('depts',e.dp))+(e.role?' — '+esc(e.role):'')+'</small>'+(e.uid?' 🔗':'')},'ede')
  +'<h3 class="sh">مكتبة المجموعات (تاسك + عناصرها)</h3>'+vGroups()
  +'<h3 class="sh">قوالب الماكينات</h3>'+(S.tpls.length?list('tpls',function(t){return esc(t.n)+' <small>('+(t.items||[]).length+' تاسك)</small>'},'deltpl'):'<div class="mut">احفظ قالب من صفحة أي ماكينة</div>')+'</div></div>'
- +vAcc()+vTrash()+(SBM?'<h3 class="sh">نسخ احتياطي ونقل البيانات</h3><div class="tools"><button class="btn" data-a="sbexp">تصدير نسخة (JSON)</button><button class="btn ghost" data-a="xlsx" data-k="all">تصدير Excel</button><button class="btn ghost" data-a="sbimp">استيراد نسخة (JSON)</button></div>':'')+'<h3 class="sh">سجل التعديلات</h3>'+(l2?'<table>'+l2+'</table>':'<div class="mut">—</div>')+'</div>'}
+ +vAcc()+vTrash()+vBk()+(SBM?'<h3 class="sh">نسخ احتياطي ونقل البيانات</h3><div class="tools"><button class="btn" data-a="sbexp">تصدير نسخة (JSON)</button><button class="btn ghost" data-a="xlsx" data-k="all">تصدير Excel</button><button class="btn ghost" data-a="sbimp">استيراد نسخة (JSON)</button></div>':'')+'<h3 class="sh">سجل التعديلات</h3>'+(l2?'<table>'+l2+'</table>':'<div class="mut">—</div>')+'</div>'}
 function mOpts(t){var a=CT();if(!a.some(function(m){return m.id===t.m})){var c=g('machines',t.m);if(c)a=[c].concat(a)}return a.map(function(m){return '<option value="'+esc(m.id)+'"'+(m.id===t.m?' selected':'')+'>'+(m.fac?'[مشروع] ':'')+esc(m.n)+'</option>'}).join('')}
 function dRow(t,ci,ii){if(!CD||CD.t!==t.id||CD.c!==ci||CD.i!==ii)return '';var c=CL(t)[ci].k==='c';return '<div class="it draft"><input type="text" class="n cit" id="cd" data-id="'+t.id+'" data-c="'+ci+'" data-i="'+ii+'" placeholder="'+(c?'اسم المكوّن (× العدد اختياري)':'بند جديد، Enter للي بعده، Esc للإلغاء')+'"></div>'}
 function vAcc(){if(ROLE!=='admin'||!SBM)return '';if(ACC===null&&!ACCL)loadAcc();
@@ -76,4 +76,11 @@ function vGroups(){if(!S.groups.length)return '<div class="mut">احفظ مجم�
  var f=function(x){return esc(x.n)+' <small>('+gtasks(x)+' تاسك · '+gitems(x)+' عنصر)</small>'};
  return gsecs().concat(['']).map(function(s){var arr=S.groups.filter(function(x){return (x.sec||'')===s});if(!arr.length)return '';var op=X['gs:'+s]!==false;
   return '<div style="margin:10px 0 4px"><a data-a="tgls" data-s="'+esc(s)+'" style="cursor:pointer"><b>'+(op?'▾ ':'◂ ')+(s?esc(s):'بدون قسم')+'</b> <small>('+arr.length+')</small></a>'+(s?' <button class="btn ghost sm" data-a="rensec" data-s="'+esc(s)+'">إعادة تسمية</button>':'')+'</div>'+(op?list('groups',f,'editg',arr):'')}).join('')}
+function vBk(){if(!(SBM&&ROLE==='admin'))return '';if(!BKL){BKL=1;loadBk()}
+ var h='<h3 class="sh">النسخ الاحتياطية على السيرفر <button class="btn sm" data-a="bknow">خد نسخة دلوقتي</button></h3><div class="mut" style="font-size:12px">بتتاخد تلقائي كل أسبوع (نهاية الخميس) ويتحفظ آخر 12 نسخة. التنزيل بيطلّع ملف JSON تقدر تستورده بزرار «استيراد نسخة».</div>';
+ if(BKE)return h+'<div class="mut">'+esc(BKE)+'</div>';
+ if(BK===null)return h+'<div class="mut">جاري التحميل...</div>';
+ if(!BK.length)return h+'<div class="mut">مفيش نسخ لسه. اضغط «خد نسخة دلوقتي» أو استنى أول نسخة تلقائية.</div>';
+ var au=BK.filter(function(x){return x.kind==='auto'})[0],warn=(!au||Date.now()-new Date(au.taken_at).getTime()>9*864e5)?'<div class="ban"><b>مفيش نسخة تلقائية في آخر 9 أيام.</b><span>اتأكد إن المهمة المجدولة شغالة في Supabase (05_weekly_backup.sql).</span></div>':'';
+ return h+warn+'<table><tr><th>التاريخ</th><th>النوع</th><th>العناصر</th><th></th></tr>'+BK.map(function(x){return '<tr><td>'+dstr(new Date(x.taken_at).getTime())+'</td><td>'+(x.kind==='auto'?'تلقائية':'يدوية')+'</td><td>'+(x.n_docs||0)+'</td><td style="white-space:nowrap"><button class="btn ghost sm" data-a="bkdl" data-id="'+x.id+'">تنزيل</button> <button class="btn ghost sm" data-a="bkrs" data-id="'+x.id+'">استرجاع</button></td></tr>'}).join('')+'</table>'}
 

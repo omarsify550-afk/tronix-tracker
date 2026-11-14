@@ -18,3 +18,10 @@ function sbShow(m){$('login').className='ov';$('lmsg').textContent=m||''}
 var ACC=null,ACCL=0,ACCE='';
 async function sbAdmin(b,quiet){try{var r=await SB.functions.invoke('nw-admin',{body:b});if(r.error){var m='';try{var j=await r.error.context.json();m=j.error||''}catch(e){}if(!quiet)toast(m||'تعذّر الاتصال بدالة الحسابات (nw-admin)');return null}return r.data}catch(e){if(!quiet)toast('تعذّر الاتصال بدالة الحسابات (nw-admin)');return null}}
 async function loadAcc(){ACCL=1;ACCE='';var r=await sbAdmin({op:'list'},true);if(r&&r.users)ACC=r.users;else{ACC=null;ACCE='تعذّر تحميل الحسابات. اتأكد إن دالة nw-admin اتنشرت على Supabase (الخطوات في 04_roles_accounts.sql).'}ACCL=2;if(V==='settings')render()}
+/* النسخ الاحتياطية على السيرفر (05_weekly_backup.sql) */
+var BK=null,BKL=0,BKE='';
+async function loadBk(){BKL=1;BKE='';try{var r=await SB.from('nw_backups').select('id,taken_at,kind,n_docs').order('taken_at',{ascending:false}).limit(12);if(r.error)throw r.error;BK=r.data||[]}catch(e){BK=null;BKE='تعذّر تحميل النسخ. اتأكد إنك شغّلت ملف 05_weekly_backup.sql في Supabase.'}BKL=2;if($('modal').className.indexOf('hide')>-1&&(V==='settings'||V==='dash'))render()}
+function srvFresh(){return !!(BK&&BK.length&&Date.now()-new Date(BK[0].taken_at).getTime()<8*864e5)}
+async function bkGet(id){var r=await SB.from('nw_backups').select('data,taken_at').eq('id',id).single();if(r.error)throw r.error;return r.data}
+async function bkImport(o){var rows=[];COL.forEach(function(c){var m=o[c]||{};Object.keys(m).forEach(function(id){rows.push({col:c,id:id,data:m[id]})})});if(!rows.length)throw new Error('النسخة فاضية');for(var k=0;k<rows.length;k+=200){var q=await SB.from('nw_docs').upsert(rows.slice(k,k+200));if(q.error)throw q.error}await db.reload();return rows.length}
+

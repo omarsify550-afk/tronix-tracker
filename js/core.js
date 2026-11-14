@@ -6,7 +6,7 @@ try{var _p=JSON.parse(localStorage.getItem('tronix_pc')||'{}');PC.bw=_p.bw?1:0;P
 var PROF={},ROLE='local',SBM=false;
 var RL={admin:'مدير النظام',manager:'مدير مصنع / تخطيط',supervisor:'مشرف قسم',worker:'موظف',viewer:'مشاهدة فقط'},SUPV=',newt,pub,dcn,dt,dsub,ak,ap,fromgrp,cpt,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,mvt,mvi,';
 function can(a){if(ROLE==='admin'||ROLE==='manager'||ROLE==='local')return true;return ROLE==='supervisor'&&!!a&&SUPV.indexOf(','+a+',')>-1}
-var NEEDS=',newm,copym,editm,delm,restm,savetpl,newt,pub,dcn,dt,dsub,ak,ap,fromgrp,savegrp,cpt,newd,editd,newe,ede,newc,editc,newsp,editsp,editg,deltpl,mvup,mvdn,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,sbimp,sbexp,newms,editms,newp,editp,mse,msap,msapp,delf,arch1,ss,msman,mvm,mvt,mvi,trr,trx,trclr,rensec,';
+var NEEDS=',newm,copym,editm,delm,restm,savetpl,newt,pub,dcn,dt,dsub,ak,ap,fromgrp,savegrp,cpt,newd,editd,newe,ede,newc,editc,newsp,editsp,editg,deltpl,mvup,mvdn,unl,parc,auc,rvc,catc,dpc,rsc,duc,dcl,nc,edi,sbimp,sbexp,newms,editms,newp,editp,mse,msap,msapp,delf,arch1,ss,msman,mvm,mvt,mvi,trr,trx,trclr,rensec,bknow,bkdl,bkrs,';
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function g(c,id){return S[c].filter(function(x){return x.id===id})[0]}

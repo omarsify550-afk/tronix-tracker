@@ -11,7 +11,7 @@
   COL.forEach(function(c){db.collection(c).onSnapshot(function(s){var al=s.docs.map(function(d){return Object.assign({id:d.id},d.data())}).sort(byO);if(c==='tasks'||c==='machines'){TR[c]=al.filter(function(x){return x.del});al=al.filter(function(x){return !x.del})}S[c]=al;if($('modal').className.indexOf('hide')>-1)render()},function(){toast('تعذّر تحميل البيانات')})});
   document.querySelector('.nav').insertAdjacentHTML('beforeend','<a data-a="logout">خروج ('+esc(r.data.name||'')+')</a>');
   if(ROLE!=='admin'&&ROLE!=='manager'){['settings','arch'].forEach(function(v){var a=document.querySelector('.nav a[data-v='+v+']');if(a)a.style.display='none'})}
-  render();if(ROLE==='admin'||ROLE==='manager')setTimeout(purgeTrash,10000)}
+  render();if(ROLE==='admin'||ROLE==='manager')setTimeout(purgeTrash,10000);if(ROLE==='admin')setTimeout(loadBk,3000)}
  $('lgo').onclick=async function(){var em=$('lem').value.trim(),pw=$('lpw').value;if(!em||!pw){$('lmsg').textContent='اكتب الإيميل وكلمة المرور';return}$('lmsg').textContent='جاري الدخول...';var q=await SB.auth.signInWithPassword({email:em,password:pw});if(q.error){$('lmsg').textContent='بيانات الدخول غلط';return}await start(q.data.user)};
  document.addEventListener('keydown',function(ev){if(ev.key==='Enter'&&ev.target.closest&&ev.target.closest('#login')){ev.preventDefault();$('lgo').click()}});
  var s=await SB.auth.getSession();
